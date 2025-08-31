@@ -71,7 +71,8 @@ export default function Dashboard() {
       return;
     }
 
-    const amount = device.metadata?.price || '10.00';
+    const deviceMetadata = device.metadata as { price?: string } | null;
+    const amount = deviceMetadata?.price || '10.00';
     setPaymentModalData({ device, command, amount });
   };
 
@@ -133,13 +134,13 @@ export default function Dashboard() {
           
           {/* Left Column: Device Controls */}
           <div className="lg:col-span-2 space-y-6">
-            {devices.map((device: Device) => (
+            {(devices as Device[]).map((device: Device) => (
               <DeviceCard
                 key={device.id}
                 device={device}
                 onCommand={handleDeviceCommand}
                 isWalletConnected={!!walletAddress}
-                userSessions={userData?.activeSessions || []}
+                userSessions={(userData as any)?.activeSessions || []}
                 data-testid={`device-card-${device.id}`}
               />
             ))}
@@ -150,14 +151,14 @@ export default function Dashboard() {
             <PaymentStatus data-testid="payment-status" />
             
             <TransactionHistory 
-              transactions={userData?.paymentHistory || []}
+              transactions={(userData as any)?.paymentHistory || []}
               data-testid="transaction-history"
             />
             
             <SystemStatus
               wsConnected={wsConnected}
-              connectedDevices={devices.filter((d: Device) => d.isOnline).length}
-              totalDevices={devices.length}
+              connectedDevices={(devices as Device[]).filter((d: Device) => d.isOnline).length}
+              totalDevices={(devices as Device[]).length}
               walletAddress={walletAddress}
               data-testid="system-status"
             />

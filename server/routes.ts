@@ -51,8 +51,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If no payment header, return 402 Payment Required
       if (!paymentHeader) {
+        const deviceMetadata = device.metadata as { price?: string } | null;
         const paymentRequest = {
-          amount: device.metadata?.price || "10.00",
+          amount: deviceMetadata?.price || "10.00",
           currency: "USDC",
           network: "eip155:84532",
           recipient: process.env.PAYMENT_RECIPIENT || "0x742d35Cc6634C0532925a3b8D2d3A1b8f0e4C0d5",

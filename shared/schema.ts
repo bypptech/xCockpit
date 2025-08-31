@@ -17,7 +17,7 @@ export const devices = pgTable("devices", {
   status: text("status").notNull().default("offline"),
   isOnline: boolean("is_online").default(false).notNull(),
   lastActivity: timestamp("last_activity"),
-  metadata: jsonb("metadata"),
+  metadata: jsonb("metadata").$type<{ price?: string; [key: string]: any }>(),
 });
 
 export const payments = pgTable("payments", {

@@ -30,7 +30,8 @@ export class WebSocketService {
 
       ws.on('close', () => {
         // Remove device connection
-        for (const [deviceId, connection] of this.deviceConnections.entries()) {
+        const entries = Array.from(this.deviceConnections.entries());
+        for (const [deviceId, connection] of entries) {
           if (connection === ws) {
             this.deviceConnections.delete(deviceId);
             this.updateDeviceStatus(deviceId, 'offline', false);

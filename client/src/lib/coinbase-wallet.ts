@@ -11,8 +11,7 @@ class WalletService {
   constructor() {
     this.sdk = new CoinbaseWalletSDK({
       appName: APP_NAME,
-      appLogoUrl: APP_LOGO_URL,
-      darkMode: false
+      appLogoUrl: APP_LOGO_URL
     });
 
     this.provider = this.sdk.makeWeb3Provider();

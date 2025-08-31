@@ -101,6 +101,10 @@ export class MemStorage implements IStorage {
   async createDevice(insertDevice: InsertDevice): Promise<Device> {
     const device: Device = { 
       ...insertDevice,
+      location: insertDevice.location || null,
+      status: insertDevice.status || 'offline',
+      isOnline: insertDevice.isOnline || false,
+      metadata: insertDevice.metadata || null,
       lastActivity: new Date()
     };
     this.devices.set(device.id, device);
@@ -133,6 +137,9 @@ export class MemStorage implements IStorage {
     const payment: Payment = {
       ...insertPayment,
       id,
+      status: insertPayment.status || 'pending',
+      currency: insertPayment.currency || 'USDC',
+      txHash: insertPayment.txHash || null,
       createdAt: new Date(),
       completedAt: null
     };
@@ -165,6 +172,7 @@ export class MemStorage implements IStorage {
     const session: Session = {
       ...insertSession,
       id,
+      isActive: insertSession.isActive !== undefined ? insertSession.isActive : true,
       createdAt: new Date()
     };
     this.sessions.set(id, session);

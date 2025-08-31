@@ -116,7 +116,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           <i className={`${getDeviceIcon()} mr-2`}></i>
           {getCommandLabel()}
           <span className="ml-2 text-sm opacity-90">
-            {device.metadata?.price || '10'} USDC
+            {(device.metadata as { price?: string } | null)?.price || '10'} USDC
           </span>
         </Button>
         <Button 

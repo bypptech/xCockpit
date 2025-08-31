@@ -4,9 +4,27 @@
 
 This is a full-stack IoT payment gateway application that enables cryptocurrency-based payments for device commands using the HTTP 402 Payment Required protocol. The system allows users to connect their Coinbase wallets, pay in USDC on Base Sepolia testnet, and execute commands on smart IoT devices like locks and lights. Built with React frontend, Express.js backend, PostgreSQL database via Drizzle ORM, and real-time WebSocket communication.
 
+**NEW**: Integrated with Web3 AI Vibe Coding methodology for enhanced development workflow using multiple AI tools (Claude, Gemini, Kiro, GitHub Copilot) with specific configurations for optimal Web3 development.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## AI Development Workflow
+
+Following Web3 AI Vibe Coding methodology:
+- **Requirements & Design**: Gemini + Kiro for analysis and planning
+- **Implementation**: Claude for TypeScript/React development
+- **Code Completion**: GitHub Copilot for productivity
+- **Review & Optimization**: Multi-tool approach for quality assurance
+
+## Recent Updates (2025-01-31)
+
+- ✅ Fixed TypeScript type errors across the codebase
+- ✅ Added AI tool configuration files (.claude, .gemini, .kiro, .vscode)
+- ✅ Integrated Web3 AI Vibe Coding development methodology
+- ✅ Enhanced project documentation with AI-driven workflow guides
+- ✅ Improved type safety for device metadata and payment processing
 
 ## System Architecture
 
