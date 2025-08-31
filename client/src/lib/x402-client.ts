@@ -36,6 +36,11 @@ export class X402Client {
   }> {
     try {
       // Phase 1: Initial request without payment header
+      console.log(`🔄 X402 Request: POST /api/devices/${deviceId}/commands/${command}`, {
+        walletAddress,
+        timestamp: new Date().toISOString()
+      });
+      
       const response = await fetch(`/api/devices/${deviceId}/commands/${command}`, {
         method: 'POST',
         headers: {
@@ -45,6 +50,13 @@ export class X402Client {
           walletAddress
         }),
         credentials: 'include'
+      });
+
+      console.log(`📡 X402 Response:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url
       });
 
       if (response.ok) {
@@ -62,8 +74,11 @@ export class X402Client {
 
       if (response.status === 402) {
         // Payment Required - parse 402 response
+        console.log('💰 402 Payment Required detected');
         const responseBody = await response.json();
+        console.log('📄 402 Response body:', responseBody);
         const paymentInfo = this.parse402Response(responseBody);
+        console.log('🎯 Parsed payment info:', paymentInfo);
         
         return {
           success: false,
@@ -147,6 +162,12 @@ export class X402Client {
       }));
 
       // Make request with X-PAYMENT header
+      console.log(`💳 X402 Payment Request: POST /api/devices/${deviceId}/commands/${command}`, {
+        hasPaymentHeader: !!paymentHeader,
+        paymentHeaderLength: paymentHeader.length,
+        walletAddress: paymentData.walletAddress
+      });
+      
       const response = await fetch(`/api/devices/${deviceId}/commands/${command}`, {
         method: 'POST',
         headers: {
@@ -157,6 +178,13 @@ export class X402Client {
           walletAddress: paymentData.walletAddress
         }),
         credentials: 'include'
+      });
+
+      console.log(`💳 X402 Payment Response:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url
       });
 
       if (!response.ok) {
