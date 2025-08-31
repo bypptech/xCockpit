@@ -7,8 +7,6 @@ import PaymentModal from '@/components/payment-modal';
 import PaymentStatus from '@/components/payment-status';
 import TransactionHistory from '@/components/transaction-history';
 import SystemStatus from '@/components/system-status';
-import SpendingCapSetup from '@/components/spending-cap-setup';
-import SpendingCapCard from '@/components/spending-cap-card';
 import { useWebSocket } from '@/lib/websocket';
 import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
@@ -23,7 +21,6 @@ export default function Dashboard() {
     amount: string;
     recipient: string;
   } | null>(null);
-  const [showSpendingCapSetup, setShowSpendingCapSetup] = useState(false);
   
   const { isConnected: wsConnected, lastMessage } = useWebSocket();
 
@@ -196,11 +193,6 @@ export default function Dashboard() {
             {/* Balance Card - Always visible at the top */}
             <BalanceCard walletAddress={walletAddress} />
             
-            {/* Spending Cap Card */}
-            <SpendingCapCard 
-              walletAddress={walletAddress}
-              onSetupCap={() => setShowSpendingCapSetup(true)}
-            />
             
             {/* Device Cards */}
             {(devices as Device[]).map((device: Device) => (
@@ -248,14 +240,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Spending Cap Setup Modal */}
-      {showSpendingCapSetup && (
-        <SpendingCapSetup
-          walletAddress={walletAddress}
-          onClose={() => setShowSpendingCapSetup(false)}
-          recentPayments={(userData as any)?.paymentHistory || []}
-        />
-      )}
     </div>
   );
 }
