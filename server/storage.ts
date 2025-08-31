@@ -104,7 +104,7 @@ export class MemStorage implements IStorage {
       location: insertDevice.location || null,
       status: insertDevice.status || 'offline',
       isOnline: insertDevice.isOnline || false,
-      metadata: insertDevice.metadata || null,
+      metadata: insertDevice.metadata as { price?: string; [key: string]: any } | null,
       lastActivity: new Date()
     };
     this.devices.set(device.id, device);
