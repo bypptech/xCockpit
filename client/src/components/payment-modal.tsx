@@ -6,6 +6,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
 import { balanceEvents } from '@/lib/balance-events';
+import { MetaTransactionService, PaymentMethod } from '@/lib/meta-transaction';
+import { ERC20ApprovalService } from '@/lib/erc20-approve';
+import { FastPathPaymentService } from '@/lib/fast-path-payment';
+import { SpendingCapService } from '@/lib/spending-cap';
 import { type Device } from '@shared/schema';
 
 interface PaymentModalProps {
@@ -18,37 +22,98 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ device, command, amount, recipient, walletAddress, onClose }: PaymentModalProps) {
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'confirming' | 'completed' | 'error'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'analyzing' | 'processing' | 'confirming' | 'completed' | 'error'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | 'fast_path'>('direct');
+  const [approvalNeeded, setApprovalNeeded] = useState<boolean>(false);
+  const [fastPathAvailable, setFastPathAvailable] = useState<boolean>(false);
+  const [spendingCapInfo, setSpendingCapInfo] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
-      setPaymentStatus('processing');
+      setPaymentStatus('analyzing');
       setPaymentError(null);
 
       try {
+        console.log(`🔍 Analyzing optimal payment method for ${amount} USDC`);
         
-        console.log(`💰 Starting USDC payment:`, {
-          recipient, // Server-specified recipient
-          amount,
-          walletAddress,
-          device: device.name
-        });
+        let paymentResult: any;
         
-        // Send USDC payment
+        // Phase 1: Check fast path availability first (highest priority)
+        const fastPathCheck = await SpendingCapService.canUseFastPath(walletAddress, amount);
+        
+        if (fastPathCheck.canUseFastPath) {
+          console.log(`⚡ Fast path available: ${fastPathCheck.reason}`);
+          setPaymentMethod('fast_path');
+          setFastPathAvailable(true);
+          setSpendingCapInfo(`Remaining cap: $${fastPathCheck.currentCap?.remainingCap || '0.00'}`);
+          
+          // Execute ultra-fast payment
+          setPaymentStatus('processing');
+          paymentResult = await FastPathPaymentService.executePayment(
+            walletAddress,
+            recipient,
+            amount
+          );
+          
+          if (!paymentResult.success) {
+            throw new Error(paymentResult.error || 'Fast path payment failed');
+          }
+          
+          console.log(`✅ Fast path payment completed in ${paymentResult.executionTime}ms`);
+          
+          // Update spending cap display
+          if (paymentResult.spendingCapUsed) {
+            setSpendingCapInfo(
+              `Daily remaining: $${paymentResult.spendingCapUsed.dailyRemaining} USDC`
+            );
+          }
+          
+        } else {
+          console.log(`🔄 Fast path unavailable: ${fastPathCheck.reason}`);
+          setFastPathAvailable(false);
+          setSpendingCapInfo(fastPathCheck.reason);
+          
+          // Phase 2: Fallback to standard optimized payment methods
+          const { recommendedMethod, approvalState, supportsPermit } = 
+            await MetaTransactionService.selectOptimalPaymentMethod(walletAddress, amount);
+          
+          console.log(`🚀 Fallback method: ${recommendedMethod}`, {
+            approvalState,
+            supportsPermit,
+            recipient,
+            amount,
+            device: device.name
+          });
+          
+          setPaymentMethod(recommendedMethod);
+          setApprovalNeeded(approvalState.needsApproval && recommendedMethod === 'approve_transfer');
+          
+          // Execute standard payment
+          setPaymentStatus('processing');
+          paymentResult = await MetaTransactionService.executeOptimizedPayment(
+            walletAddress,
+            recipient,
+            amount
+          );
+          
+          if (!paymentResult.success) {
+            throw new Error(paymentResult.error || 'Payment failed');
+          }
+          
+          console.log(`✅ Payment completed using ${paymentResult.method}:`, paymentResult.txHash);
+        }
+        
+        // Phase 3: Submit payment via x402 protocol
         setPaymentStatus('confirming');
-        const txHash = await walletService.sendUSDCPayment(recipient, amount);
         
-        console.log(`✅ Payment transaction submitted:`, txHash);
-        
-        // Submit payment via x402
         const result = await X402Client.submitPayment(device.id, command, {
           amount,
           currency: 'USDC',
           network: 'eip155:84532',
-          txHash,
+          txHash: paymentResult.txHash || '',
           walletAddress
         });
 
@@ -98,10 +163,15 @@ export default function PaymentModal({ device, command, amount, recipient, walle
 
   const getStatusMessage = () => {
     switch (paymentStatus) {
+      case 'analyzing':
+        return 'Analyzing optimal payment method...';
       case 'processing':
-        return 'Preparing transaction...';
+        return paymentMethod === 'fast_path' ? 'Executing instant payment...' :
+               paymentMethod === 'permit_transfer' ? 'Executing gasless permit payment...' : 
+               paymentMethod === 'approve_transfer' ? 'Executing pre-approved payment...' : 
+               'Executing direct payment...';
       case 'confirming':
-        return 'Waiting for wallet confirmation...';
+        return 'Confirming with IoT device...';
       case 'completed':
         return 'Payment completed successfully!';
       case 'error':
@@ -168,6 +238,24 @@ export default function PaymentModal({ device, command, amount, recipient, walle
                 {`${recipient.slice(0, 8)}...${recipient.slice(-6)}`}
               </span>
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Payment Method</span>
+              <span className="text-xs text-card-foreground" data-testid="text-payment-method">
+                {paymentMethod === 'fast_path' ? '🚀 Instant (Within Cap)' :
+                 paymentMethod === 'permit_transfer' ? '⚡ Gasless Permit' :
+                 paymentMethod === 'approve_transfer' ? '🔄 Pre-approved' :
+                 '💳 Direct Transfer'}
+                {approvalNeeded && ' (Approval needed)'}
+              </span>
+            </div>
+            {spendingCapInfo && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Spending Cap</span>
+                <span className="text-xs text-muted-foreground" data-testid="text-spending-cap-info">
+                  {spendingCapInfo}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Payment Method */}
@@ -200,16 +288,17 @@ export default function PaymentModal({ device, command, amount, recipient, walle
           <Button 
             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={handleConfirmPayment}
-            disabled={paymentStatus === 'processing' || paymentStatus === 'confirming' || paymentStatus === 'completed'}
+            disabled={paymentStatus === 'analyzing' || paymentStatus === 'processing' || paymentStatus === 'confirming' || paymentStatus === 'completed'}
             data-testid="button-confirm-payment"
           >
             <i className="fas fa-credit-card mr-2"></i>
-            {paymentStatus === 'idle' ? 'Pay Now' : 'Processing...'}
+            {paymentStatus === 'idle' ? 'Pay with Smart Method' : 
+             paymentStatus === 'analyzing' ? 'Analyzing...' : 'Processing...'}
           </Button>
         </div>
 
         {/* Payment Status Updates */}
-        {(paymentStatus === 'processing' || paymentStatus === 'confirming' || paymentStatus === 'completed' || paymentStatus === 'error') && (
+        {(paymentStatus === 'analyzing' || paymentStatus === 'processing' || paymentStatus === 'confirming' || paymentStatus === 'completed' || paymentStatus === 'error') && (
           <div className={`mt-6 p-4 rounded-lg border ${
             paymentStatus === 'error' 
               ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800' 

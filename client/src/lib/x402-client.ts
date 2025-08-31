@@ -72,9 +72,23 @@ export class X402Client {
         };
       }
 
-      // Other error cases
-      const errorText = await response.text();
-      throw new Error(`${response.status}: ${errorText}`);
+      // Other error cases - try JSON first, fallback to text
+      let errorMessage: string;
+      const responseClone = response.clone();
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || 'Unknown error';
+      } catch {
+        // If JSON parsing fails, try text from cloned response
+        try {
+          const errorText = await responseClone.text();
+          errorMessage = errorText || `HTTP ${response.status}`;
+        } catch {
+          errorMessage = `HTTP ${response.status}`;
+        }
+      }
+      throw new Error(`${response.status}: ${errorMessage}`);
 
     } catch (error: any) {
       console.error('X402 payment error:', error);
@@ -146,7 +160,14 @@ export class X402Client {
       });
 
       if (!response.ok) {
-        throw new Error(`${response.status}: ${await response.text()}`);
+        let errorMessage: string;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || 'Unknown error';
+        } catch {
+          errorMessage = `HTTP ${response.status}`;
+        }
+        throw new Error(`${response.status}: ${errorMessage}`);
       }
 
       const result = await response.json();
