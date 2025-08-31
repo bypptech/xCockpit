@@ -36,7 +36,25 @@ export default function Dashboard() {
   // Fetch user data when wallet is connected
   const { data: userData } = useQuery({
     queryKey: ['/api/users', walletAddress],
-    enabled: !!walletAddress
+    enabled: !!walletAddress,
+    queryFn: async () => {
+      if (!walletAddress) return null;
+      
+      const response = await fetch(`/api/users/${walletAddress}`, {
+        credentials: 'include'
+      });
+      
+      // Handle 404 gracefully - user doesn't exist yet
+      if (response.status === 404) {
+        return null;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
+    }
   });
 
   useEffect(() => {
