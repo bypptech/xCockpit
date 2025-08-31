@@ -18,6 +18,8 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         return 'fas fa-lock';
       case 'light':
         return 'fas fa-lightbulb';
+      case 'gacha':
+        return 'fas fa-gift';
       default:
         return 'fas fa-microchip';
     }
@@ -29,6 +31,8 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         return device.status === 'locked' ? 'unlock' : 'lock';
       case 'light':
         return device.status === 'off' ? 'on' : 'off';
+      case 'gacha':
+        return 'play';
       default:
         return 'toggle';
     }
@@ -40,6 +44,8 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         return device.status === 'locked' ? 'Unlock Device' : 'Lock Device';
       case 'light':
         return device.status === 'off' ? 'Turn On' : 'Turn Off';
+      case 'gacha':
+        return 'Play Gacha';
       default:
         return 'Toggle Device';
     }
@@ -63,6 +69,38 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
     return Math.max(0, (remaining / total) * 100);
   };
 
+  const getStatusDisplay = () => {
+    if (!device.isOnline) return { text: 'Offline', color: 'bg-red-500' };
+    
+    switch (device.type) {
+      case 'gacha':
+        switch (device.status) {
+          case 'ready':
+            return { text: 'Ready to Play', color: 'bg-green-500' };
+          case 'playing':
+            return { text: 'Playing...', color: 'bg-yellow-500' };
+          case 'dispensing':
+            return { text: 'Dispensing Prize', color: 'bg-blue-500' };
+          case 'maintenance':
+            return { text: 'Maintenance', color: 'bg-orange-500' };
+          default:
+            return { text: device.status, color: 'bg-gray-500' };
+        }
+      case 'lock':
+        return { 
+          text: device.status === 'locked' ? 'Locked' : 'Unlocked', 
+          color: device.status === 'locked' ? 'bg-red-500' : 'bg-green-500' 
+        };
+      case 'light':
+        return { 
+          text: device.status === 'off' ? 'Off' : 'On', 
+          color: device.status === 'off' ? 'bg-gray-500' : 'bg-yellow-500' 
+        };
+      default:
+        return { text: device.status, color: 'bg-gray-500' };
+    }
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
@@ -82,9 +120,9 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         
         {/* Device Status */}
         <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${device.isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <div className={`w-3 h-3 rounded-full ${getStatusDisplay().color}`}></div>
           <span className="text-sm font-medium text-muted-foreground" data-testid={`text-device-status-${device.id}`}>
-            {device.status}
+            {getStatusDisplay().text}
           </span>
         </div>
       </div>
@@ -110,13 +148,13 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         <Button 
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => onCommand(device, getDeviceCommand())}
-          disabled={!isWalletConnected || !device.isOnline}
+          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready')}
           data-testid={`button-device-command-${device.id}`}
         >
           <i className={`${getDeviceIcon()} mr-2`}></i>
           {getCommandLabel()}
           <span className="ml-2 text-sm opacity-90">
-            {(device.metadata as { price?: string } | null)?.price || '10'} USDC
+            ${parseFloat((device.metadata as { price?: string } | null)?.price || '0.01').toFixed(3)} USDC
           </span>
         </Button>
         <Button 

@@ -44,7 +44,7 @@ export class X402Service {
       const decoded = Buffer.from(paymentHeader, 'base64').toString('utf-8');
       const payment = JSON.parse(decoded);
       
-      if (!payment.amount || !payment.currency || !payment.network || !payment.txHash) {
+      if (!payment.amount || !payment.currency || !payment.network || !payment.recipient) {
         return null;
       }
       

@@ -46,23 +46,23 @@ export class MemStorage implements IStorage {
     const sampleDevices: Device[] = [
       {
         id: "ESP32_001",
-        name: "Smart Lock #001",
-        type: "lock",
-        location: "Main Entrance",
-        status: "locked",
+        name: "Smart Gacha #001",
+        type: "gacha",
+        location: "MIDORI.so SHIBUYA / CryptoBase",
+        status: "ready",
         isOnline: true,
         lastActivity: new Date(),
-        metadata: { price: "10.00" }
+        metadata: { price: "0.01" }
       },
       {
         id: "ESP32_002", 
-        name: "Smart Light #002",
-        type: "light",
-        location: "Conference Room A",
-        status: "off",
+        name: "Smart Gacha #002",
+        type: "gacha",
+        location: "MIDORI.so SHIBUYA / CryptoBase",
+        status: "ready",
         isOnline: true,
         lastActivity: new Date(),
-        metadata: { price: "5.00" }
+        metadata: { price: "0.005" }
       }
     ];
 

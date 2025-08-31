@@ -88,6 +88,7 @@ export class X402Client {
         amount: paymentData.amount,
         currency: paymentData.currency,
         network: paymentData.network,
+        recipient: paymentData.walletAddress,
         metadata: {
           txHash: paymentData.txHash,
           walletAddress: paymentData.walletAddress

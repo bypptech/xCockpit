@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import WalletConnection from '@/components/wallet-connection';
+import BalanceCard from '@/components/balance-card';
 import DeviceCard from '@/components/device-card';
 import PaymentModal from '@/components/payment-modal';
 import PaymentStatus from '@/components/payment-status';
@@ -99,8 +100,8 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <i className="fas fa-microchip text-2xl text-primary"></i>
-                <span className="font-bold text-xl text-foreground">IoT Gateway</span>
+                <i className="fas fa-rocket text-2xl text-primary"></i>
+                <span className="font-bold text-xl text-foreground">xCockpit</span>
               </div>
               
               {/* Network Status Badge */}
@@ -132,8 +133,12 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Left Column: Device Controls */}
+          {/* Left Column: Balance & Device Controls */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Balance Card - Always visible at the top */}
+            <BalanceCard walletAddress={walletAddress} />
+            
+            {/* Device Cards */}
             {(devices as Device[]).map((device: Device) => (
               <DeviceCard
                 key={device.id}

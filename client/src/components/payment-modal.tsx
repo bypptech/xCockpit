@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
+import { balanceEvents } from '@/lib/balance-events';
 import { type Device } from '@shared/schema';
 
 interface PaymentModalProps {
@@ -30,9 +31,18 @@ export default function PaymentModal({ device, command, amount, walletAddress, o
         // Get recipient address from environment or use default
         const recipient = import.meta.env.VITE_PAYMENT_RECIPIENT || '0x742d35Cc6634C0532925a3b8D2d3A1b8f0e4C0d5';
         
+        console.log(`💰 Starting USDC payment:`, {
+          recipient,
+          amount,
+          walletAddress,
+          device: device.name
+        });
+        
         // Send USDC payment
         setPaymentStatus('confirming');
         const txHash = await walletService.sendUSDCPayment(recipient, amount);
+        
+        console.log(`✅ Payment transaction submitted:`, txHash);
         
         // Submit payment via x402
         const result = await X402Client.submitPayment(device.id, command, {
@@ -57,6 +67,9 @@ export default function PaymentModal({ device, command, amount, walletAddress, o
         // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
         queryClient.invalidateQueries({ queryKey: ['/api/users', walletAddress] });
+        
+        // Trigger balance update
+        balanceEvents.triggerBalanceUpdate();
 
         // Close modal after short delay
         setTimeout(() => {

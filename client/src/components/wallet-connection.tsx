@@ -9,30 +9,28 @@ interface WalletConnectionProps {
 }
 
 export default function WalletConnection({ walletAddress, onConnect, onDisconnect }: WalletConnectionProps) {
-  const [usdcBalance, setUsdcBalance] = useState<string>('0.00');
   const [isLoading, setIsLoading] = useState(false);
+  const [networkInfo, setNetworkInfo] = useState<{ chainId: string; name: string } | null>(null);
 
   useEffect(() => {
     if (walletAddress) {
-      loadBalance();
+      loadNetworkInfo();
     }
   }, [walletAddress]);
 
-  const loadBalance = async () => {
-    if (!walletAddress) return;
-    
+  const loadNetworkInfo = async () => {
     try {
-      const balance = await walletService.getUSDCBalance(walletAddress);
-      setUsdcBalance(balance);
+      const network = await walletService.getCurrentNetwork();
+      setNetworkInfo(network);
     } catch (error) {
-      console.error('Failed to load USDC balance:', error);
+      console.error('Failed to load network info:', error);
     }
   };
 
   const handleConnect = async () => {
     setIsLoading(true);
     try {
-      await onConnect();
+      onConnect();
     } finally {
       setIsLoading(false);
     }
@@ -53,20 +51,21 @@ export default function WalletConnection({ walletAddress, onConnect, onDisconnec
   }
 
   return (
-    <div className="flex items-center space-x-3 bg-secondary px-4 py-2 rounded-lg" data-testid="wallet-connected">
-      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+    <div className="flex items-center space-x-3 bg-secondary px-3 py-2 rounded-lg" data-testid="wallet-connected">
+      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
       <div className="flex flex-col">
         <span className="text-sm font-medium text-secondary-foreground" data-testid="text-wallet-address">
           {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
         </span>
-        <span className="text-xs text-muted-foreground" data-testid="text-usdc-balance">
-          {usdcBalance} USDC
+        <span className="text-xs text-muted-foreground">
+          {networkInfo?.name || 'Loading...'}
         </span>
       </div>
       <button 
-        className="text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-destructive transition-colors"
         onClick={onDisconnect}
         data-testid="button-disconnect-wallet"
+        title="Disconnect wallet"
       >
         <i className="fas fa-times"></i>
       </button>
