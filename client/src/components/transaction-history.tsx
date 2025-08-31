@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { type Payment } from '@shared/schema';
 
 interface TransactionHistoryProps {
@@ -5,6 +6,8 @@ interface TransactionHistoryProps {
 }
 
 export default function TransactionHistory({ transactions }: TransactionHistoryProps) {
+  const [showAll, setShowAll] = useState(false);
+
   const getTransactionIcon = (command: string) => {
     switch (command) {
       case 'unlock':
@@ -53,9 +56,15 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
         <h3 className="font-semibold text-lg text-card-foreground" data-testid="text-transaction-history-title">
           Recent Transactions
         </h3>
-        <button className="text-sm text-primary hover:text-primary/80 font-medium" data-testid="button-view-all-transactions">
-          View All <i className="fas fa-arrow-right ml-1"></i>
-        </button>
+        {transactions.length > 5 && (
+          <button 
+            onClick={() => setShowAll(!showAll)}
+            className="text-sm text-primary hover:text-primary/80 font-medium" 
+            data-testid="button-view-all-transactions"
+          >
+            {showAll ? 'Show Less' : 'View All'} <i className={`fas ${showAll ? 'fa-arrow-up' : 'fa-arrow-right'} ml-1`}></i>
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -72,7 +81,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
             </p>
           </div>
         ) : (
-          transactions.slice(0, 5).map((tx, index) => (
+          (showAll ? transactions : transactions.slice(0, 5)).map((tx, index) => (
             <div key={tx.id} className="flex items-center justify-between p-3 bg-muted rounded-lg" data-testid={`transaction-${index}`}>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">

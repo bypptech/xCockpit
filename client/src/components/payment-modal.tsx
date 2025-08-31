@@ -21,6 +21,9 @@ export default function PaymentModal({ device, command, amount, walletAddress, o
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Get recipient address
+  const recipient = import.meta.env.VITE_PAYMENT_RECIPIENT || '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238';
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
@@ -28,8 +31,6 @@ export default function PaymentModal({ device, command, amount, walletAddress, o
       setPaymentError(null);
 
       try {
-        // Get recipient address from environment or use default
-        const recipient = import.meta.env.VITE_PAYMENT_RECIPIENT || '0x742d35Cc6634C0532925a3b8D2d3A1b8f0e4C0d5';
         
         console.log(`💰 Starting USDC payment:`, {
           recipient,
@@ -161,6 +162,12 @@ export default function PaymentModal({ device, command, amount, walletAddress, o
               <span className="text-sm text-muted-foreground">Network</span>
               <span className="font-medium text-card-foreground" data-testid="text-payment-network">
                 Base Sepolia
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Recipient</span>
+              <span className="font-mono text-xs text-card-foreground" data-testid="text-payment-recipient">
+                {`${recipient.slice(0, 8)}...${recipient.slice(-6)}`}
               </span>
             </div>
           </div>
