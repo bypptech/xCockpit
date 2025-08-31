@@ -9,14 +9,17 @@ import TransactionHistory from '@/components/transaction-history';
 import SystemStatus from '@/components/system-status';
 import { useWebSocket } from '@/lib/websocket';
 import { walletService } from '@/lib/coinbase-wallet';
+import { X402Client } from '@/lib/x402-client';
 import { type Device } from '@shared/schema';
 
 export default function Dashboard() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [paymentState, setPaymentState] = useState<'idle' | 'checking' | 'payment_required' | 'processing'>('idle');
   const [paymentModalData, setPaymentModalData] = useState<{
     device: Device;
     command: string;
     amount: string;
+    recipient: string;
   } | null>(null);
   
   const { isConnected: wsConnected, lastMessage } = useWebSocket();
@@ -66,19 +69,53 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeviceCommand = (device: Device, command: string) => {
+  const handleDeviceCommand = async (device: Device, command: string) => {
     if (!walletAddress) {
       alert('Please connect your wallet first');
       return;
     }
 
-    const deviceMetadata = device.metadata as { price?: string } | null;
-    const amount = deviceMetadata?.price || '10.00';
-    setPaymentModalData({ device, command, amount });
+    setPaymentState('checking');
+
+    try {
+      // Phase 1: x402 flow - initial request
+      console.log(`🔄 Initiating x402 flow for ${device.name} - ${command}`);
+      const result = await X402Client.executeDeviceCommand(device.id, command, walletAddress);
+
+      if (result.success) {
+        // Payment not required (already paid or free operation)
+        console.log('✅ Command executed successfully:', result.payment);
+        setPaymentState('idle');
+        alert(`${command} executed successfully!`);
+        return;
+      }
+
+      if (result.paymentRequired && result.paymentInfo) {
+        // Phase 2: Payment required - show PaymentModal
+        console.log('💰 Payment required:', result.paymentInfo);
+        setPaymentModalData({
+          device,
+          command,
+          amount: result.paymentInfo.amount,
+          recipient: result.paymentInfo.recipient
+        });
+        setPaymentState('payment_required');
+      } else {
+        // Error case
+        console.error('❌ Device command failed:', result.error);
+        alert(result.error || 'Command failed');
+        setPaymentState('idle');
+      }
+    } catch (error) {
+      console.error('❌ Device command error:', error);
+      alert('Failed to execute command');
+      setPaymentState('idle');
+    }
   };
 
   const closePaymentModal = () => {
     setPaymentModalData(null);
+    setPaymentState('idle');
   };
 
   if (isLoading) {
@@ -177,6 +214,7 @@ export default function Dashboard() {
           device={paymentModalData.device}
           command={paymentModalData.command}
           amount={paymentModalData.amount}
+          recipient={paymentModalData.recipient}
           walletAddress={walletAddress!}
           onClose={closePaymentModal}
           data-testid="payment-modal"

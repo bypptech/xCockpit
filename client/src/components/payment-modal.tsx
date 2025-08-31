@@ -12,18 +12,16 @@ interface PaymentModalProps {
   device: Device;
   command: string;
   amount: string;
+  recipient: string;
   walletAddress: string;
   onClose: () => void;
 }
 
-export default function PaymentModal({ device, command, amount, walletAddress, onClose }: PaymentModalProps) {
+export default function PaymentModal({ device, command, amount, recipient, walletAddress, onClose }: PaymentModalProps) {
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'confirming' | 'completed' | 'error'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Get recipient address
-  const recipient = import.meta.env.VITE_PAYMENT_RECIPIENT || '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238';
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
@@ -33,7 +31,7 @@ export default function PaymentModal({ device, command, amount, walletAddress, o
       try {
         
         console.log(`💰 Starting USDC payment:`, {
-          recipient,
+          recipient, // Server-specified recipient
           amount,
           walletAddress,
           device: device.name

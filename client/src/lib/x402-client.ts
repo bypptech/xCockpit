@@ -21,36 +21,60 @@ export class X402Client {
   static async executeDeviceCommand(
     deviceId: string, 
     command: string, 
-    walletAddress: string,
-    txHash?: string
-  ): Promise<{ success: boolean; payment?: PaymentResponse; error?: string }> {
+    walletAddress: string
+  ): Promise<{
+    success: boolean;
+    paymentRequired?: boolean;
+    paymentInfo?: {
+      amount: string;
+      currency: string;
+      network: string;
+      recipient: string;
+    };
+    payment?: PaymentResponse;
+    error?: string;
+  }> {
     try {
-      // First attempt without payment header to get 402 response
-      let response;
-      
-      try {
-        response = await apiRequest('POST', `/api/devices/${deviceId}/commands/${command}`, {
+      // Phase 1: Initial request without payment header
+      const response = await fetch(`/api/devices/${deviceId}/commands/${command}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           walletAddress
-        });
-      } catch (error: any) {
-        // Check if it's a 402 Payment Required response
-        if (error.message.includes('402')) {
-          // Extract payment requirements from error response
-          // In a real implementation, this would parse the 402 response body
-          const paymentRequired = await this.handle402Response(deviceId, command, walletAddress);
-          return paymentRequired;
+        }),
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        // Payment not required or already processed
+        const result = await response.json();
+        const paymentResponseHeader = response.headers.get('X-PAYMENT-RESPONSE');
+        
+        if (paymentResponseHeader) {
+          const paymentResponse = JSON.parse(atob(paymentResponseHeader));
+          return { success: true, payment: paymentResponse };
         }
-        throw error;
+
+        return { success: true };
       }
 
-      // If we get here, payment was already processed
-      const paymentResponseHeader = response.headers.get('X-PAYMENT-RESPONSE');
-      if (paymentResponseHeader) {
-        const paymentResponse = JSON.parse(atob(paymentResponseHeader));
-        return { success: true, payment: paymentResponse };
+      if (response.status === 402) {
+        // Payment Required - parse 402 response
+        const responseBody = await response.json();
+        const paymentInfo = this.parse402Response(responseBody);
+        
+        return {
+          success: false,
+          paymentRequired: true,
+          paymentInfo
+        };
       }
 
-      return { success: true };
+      // Other error cases
+      const errorText = await response.text();
+      throw new Error(`${response.status}: ${errorText}`);
 
     } catch (error: any) {
       console.error('X402 payment error:', error);
@@ -58,16 +82,29 @@ export class X402Client {
     }
   }
 
-  private static async handle402Response(
-    deviceId: string, 
-    command: string, 
-    walletAddress: string
-  ): Promise<{ success: boolean; error: string }> {
-    // This would trigger the payment modal in the UI
-    // For now, return an error that the UI can handle
+  private static parse402Response(responseBody: any): {
+    amount: string;
+    currency: string;
+    network: string;
+    recipient: string;
+  } {
+    const payment = responseBody.payment;
+    if (payment?.accepts && payment.accepts.length > 0) {
+      const acceptedPayment = payment.accepts[0];
+      return {
+        amount: acceptedPayment.amount,
+        currency: 'USDC', // Infer from acceptedPayment.asset
+        network: acceptedPayment.network,
+        recipient: acceptedPayment.recipient
+      };
+    }
+    
+    // Fallback values
     return {
-      success: false,
-      error: 'PAYMENT_REQUIRED'
+      amount: '0.01',
+      currency: 'USDC',
+      network: 'eip155:84532',
+      recipient: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238'
     };
   }
 

@@ -16,7 +16,29 @@ export interface X402PaymentResponse {
 }
 
 export class X402Service {
-  static create402Response(paymentRequest: X402PaymentRequest) {
+  static calculateDevicePrice(deviceId: string, command: string): string {
+    // Device type-based pricing
+    const basePrice: Record<string, string> = {
+      'gacha': '0.01',
+      'lock': '0.005',
+      'light': '0.001'
+    };
+    
+    // Time-based pricing (peak hours multiplier)
+    const hour = new Date().getHours();
+    const peakHourMultiplier = (hour >= 18 && hour <= 22) ? 1.5 : 1.0;
+    
+    // Determine device type from deviceId
+    const deviceType = deviceId.includes('ESP32_001') ? 'gacha' : 
+                      deviceId.includes('ESP32_002') ? 'gacha' : 'gacha';
+    
+    const price = parseFloat(basePrice[deviceType] || '0.01') * peakHourMultiplier;
+    return price.toFixed(3);
+  }
+
+  static create402Response(deviceId: string, command: string) {
+    const amount = this.calculateDevicePrice(deviceId, command);
+    const recipient = process.env.PAYMENT_RECIPIENT || '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238';
     return {
       status: 402,
       headers: {
@@ -29,11 +51,15 @@ export class X402Service {
           accepts: [{
             scheme: 'exact',
             network: 'eip155:84532', // Base Sepolia
-            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC
-            amount: paymentRequest.amount,
-            recipient: paymentRequest.recipient
+            asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC on Base Sepolia
+            amount: amount,
+            recipient: recipient
           }],
-          metadata: paymentRequest.metadata
+          metadata: {
+            deviceId,
+            command,
+            timestamp: new Date().toISOString()
+          }
         }
       }
     };
