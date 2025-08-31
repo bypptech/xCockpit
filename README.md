@@ -53,18 +53,22 @@ xCockpit is a next-generation IoT control dashboard that combines Web3 payments 
 - **USDC on Base/Ethereum** - Stablecoin payments
 - **Multi-network Support** - Testnet and mainnet ready
 
-## Quick Start
+## 🚀 Quick Start Guide
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Coinbase Wallet (browser extension or mobile)
 
-### Installation
+Before you begin, ensure you have the following installed:
+
+- **Node.js 20+** ([Download here](https://nodejs.org/))
+- **npm** (comes with Node.js) or **yarn**
+- **Coinbase Wallet** - [Browser Extension](https://wallet.coinbase.com/) or Mobile App
+- **Base Sepolia Testnet USDC** - Get free testnet USDC from [Base Sepolia Faucet](https://docs.base.org/tools/network-faucets/)
+
+### Installation & Setup
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/your-username/xcockpit.git
    cd xcockpit
    ```
 
@@ -73,48 +77,162 @@ xCockpit is a next-generation IoT control dashboard that combines Web3 payments 
    npm install
    ```
 
-3. **Environment setup**
+3. **Environment configuration**
+   
+   Create environment files:
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   # Backend environment
+   touch .env
+   ```
+   
+   Add to `.env`:
+   ```env
+   # Backend Configuration
+   PORT=5001
+   NODE_ENV=development
+   
+   # Payment Configuration
+   PAYMENT_RECIPIENT=0x1c7d4b196cb0c7b01d743fbc6116a902379c7238
+   
+   # Database
+   DATABASE_URL=sqlite:./database.db
    ```
 
-4. **Start development server**
+   Frontend configuration (create `client/.env`):
+   ```env
+   # Frontend Configuration
+   VITE_BACKEND_PORT=5001
+   
+   # USDC Contract (Base Sepolia)
+   VITE_USDC_CONTRACT_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+   
+   # Network Configuration
+   VITE_NETWORK_NAME=Base Sepolia
+   VITE_CHAIN_ID=84532
+   VITE_RPC_URL=https://sepolia.base.org
+   ```
+
+4. **Start the development servers**
+   
+   **Terminal 1 - Backend Server:**
    ```bash
-   npm run dev
+   PORT=5001 npm run dev
+   ```
+   
+   **Terminal 2 - Frontend Server:**
+   ```bash
+   VITE_BACKEND_PORT=5001 npx vite --port 3000
    ```
 
 5. **Open in browser**
    ```
-   http://localhost:5000
+   http://localhost:3000
    ```
 
-## Configuration
+### 🎯 Initial Setup Steps
 
-### Environment Variables
+#### 1. **Setup Coinbase Wallet**
+- Install [Coinbase Wallet browser extension](https://wallet.coinbase.com/)
+- Create a new wallet or import existing
+- **Important**: Switch to **Base Sepolia testnet**
 
+#### 2. **Get Test USDC**
+- Visit [Base Sepolia Faucet](https://docs.base.org/tools/network-faucets/)
+- Or use [Coinbase Faucet](https://faucet.quicknode.com/base/sepolia)
+- Get both **ETH** (for gas) and **USDC** (for payments)
+- Recommended: 0.01 ETH + 1 USDC for testing
+
+#### 3. **Test the Application**
+- Connect your wallet in the app (top-right button)
+- Verify your USDC and ETH balances appear
+- Try a device command (e.g., "Play Gacha" for $0.005 USDC)
+- Confirm the payment in your wallet
+
+## ⚡ Troubleshooting
+
+### Common Issues
+
+#### 🔧 **"Cannot find module" or build errors**
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+#### 🔧 **"Port already in use" errors**
+```bash
+# Kill processes on ports
+lsof -ti:3000 | xargs kill -9  # Frontend port
+lsof -ti:5001 | xargs kill -9  # Backend port
+```
+
+#### 🔧 **Wallet connection issues**
+- Ensure Coinbase Wallet extension is installed and unlocked
+- Switch to Base Sepolia network in your wallet
+- Clear browser cache and refresh the page
+
+#### 🔧 **"Insufficient gas" errors**
+- Get more ETH from [Base Sepolia ETH Faucet](https://docs.base.org/tools/network-faucets/)
+- Recommended: Keep at least 0.005 ETH for gas fees
+
+#### 🔧 **USDC balance not updating**
+- Check if you're on the correct network (Base Sepolia)
+- Wait 30 seconds for auto-refresh or click the refresh button
+- Verify transaction on [Base Sepolia Explorer](https://sepolia-explorer.base.org/)
+
+### Development Servers Status
+
+**✅ Both servers running correctly when you see:**
+- Backend: `Server running on port 5001` + `WebSocket server listening`
+- Frontend: `Local: http://localhost:3000/` + `ready in X ms`
+
+## 📚 Advanced Configuration
+
+### Environment Variables Reference
+
+#### Backend (.env)
 ```env
+# Server Configuration
+PORT=5001
+NODE_ENV=development
+
+# Payment Configuration
+PAYMENT_RECIPIENT=0x1c7d4b196cb0c7b01d743fbc6116a902379c7238
+
+# Database Configuration  
+DATABASE_URL=sqlite:./database.db
+
+# Optional: Custom RPC endpoints
+BASE_SEPOLIA_RPC=https://sepolia.base.org
+SEPOLIA_RPC=https://rpc.sepolia.org
+```
+
+#### Frontend (client/.env)
+```env
+# Development Configuration
+VITE_BACKEND_PORT=5001
+
 # USDC Contract Addresses
 VITE_USDC_CONTRACT_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 
-# Network Configuration
+# Network Settings
 VITE_NETWORK_NAME=Base Sepolia
 VITE_CHAIN_ID=84532
 VITE_RPC_URL=https://sepolia.base.org
 
-# API Configuration
-VITE_API_URL=http://localhost:5000
-VITE_WS_URL=ws://localhost:5000
+# Optional: API endpoints
+VITE_API_URL=http://localhost:5001
+VITE_WS_URL=ws://localhost:5001
 ```
 
 ### Supported Networks
 
-| Network | Chain ID | USDC Contract | Status |
-|---------|----------|---------------|---------|
-| Base Sepolia | 84532 | 0x036CbD...CF7e | ✅ Active |
-| Sepolia Ethereum | 11155111 | 0x1c7D4B...C7238 | ✅ Active |
-| Base Mainnet | 8453 | 0x833589...2913 | 🔄 Ready |
-| Ethereum Mainnet | 1 | 0xA0b869...eB48 | 🔄 Ready |
+| Network | Chain ID | USDC Contract | RPC Endpoint | Status |
+|---------|----------|---------------|--------------|---------|
+| **Base Sepolia** | 84532 | `0x036CbD...CF7e` | https://sepolia.base.org | ✅ **Recommended** |
+| Sepolia Ethereum | 11155111 | `0x1c7D4B...C7238` | https://rpc.sepolia.org | ✅ Active |
+| Base Mainnet | 8453 | `0x833589...2913` | https://mainnet.base.org | 🔄 Production Ready |
+| Ethereum Mainnet | 1 | `0xA0b869...eB48` | https://eth.llamarpc.com | 🔄 Production Ready |
 
 ## Usage
 

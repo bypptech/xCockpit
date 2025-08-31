@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
 import { balanceEvents } from '@/lib/balance-events';
-import { MetaTransactionService, PaymentMethod } from '@/lib/meta-transaction';
 import { type Device } from '@shared/schema';
 
 interface PaymentModalProps {
@@ -18,58 +18,40 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ device, command, amount, recipient, walletAddress, onClose }: PaymentModalProps) {
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'analyzing' | 'processing' | 'confirming' | 'completed' | 'error'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'confirming' | 'completed' | 'error'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('direct');
-  const [approvalNeeded, setApprovalNeeded] = useState<boolean>(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
-      setPaymentStatus('analyzing');
+      setPaymentStatus('processing');
       setPaymentError(null);
 
       try {
-        console.log(`🔍 Analyzing optimal payment method for ${amount} USDC`);
-        
-        let paymentResult: any;
-        
-        // Determine optimal payment method
-        const { recommendedMethod, approvalState, supportsPermit } = 
-          await MetaTransactionService.selectOptimalPaymentMethod(walletAddress, amount);
-        
-        console.log(`🚀 Payment method: ${recommendedMethod}`, {
-          approvalState,
-          supportsPermit,
-          recipient,
-          amount,
-          device: device.name
+        console.log(`💳 Processing direct USDC payment:`, {
+          device: device.name,
+          command: command,
+          amount: amount,
+          recipient: recipient
         });
         
-        setPaymentMethod(recommendedMethod);
-        setApprovalNeeded(approvalState.needsApproval && recommendedMethod === 'approve_transfer');
+        // Execute direct USDC payment
+        const txHash = await walletService.sendUSDCPayment(recipient, amount);
         
-        // Execute payment
-        setPaymentStatus('processing');
-        paymentResult = await MetaTransactionService.executeOptimizedPayment(
-          walletAddress,
-          recipient,
-          amount
-        );
-        
-        if (!paymentResult.success) {
-          throw new Error(paymentResult.error || 'Payment failed');
+        if (!txHash) {
+          throw new Error('Payment transaction failed');
         }
         
-        console.log(`✅ Payment completed: ${paymentResult.method} in ${paymentResult.executionTime}ms`);
+        console.log(`✅ Payment completed: ${txHash}`);
         
-        // Phase 3: Submit payment proof to x402 endpoint
+        // Phase 2: Submit payment proof to x402 endpoint
         setPaymentStatus('confirming');
         const submitResult = await X402Client.submitPayment(device.id, command, {
           amount,
           currency: 'USDC',
           network: 'eip155:84532',
-          txHash: paymentResult.txHash,
+          txHash: txHash,
           walletAddress
         });
 
@@ -80,6 +62,9 @@ export default function PaymentModal({ device, command, amount, recipient, walle
         // Success!
         setPaymentStatus('completed');
         balanceEvents.triggerBalanceUpdate();
+        
+        // Invalidate payment history to refresh transactions
+        queryClient.invalidateQueries({ queryKey: ['/api/payments', walletAddress] });
         
         toast({
           title: "Payment Successful",
@@ -118,12 +103,8 @@ export default function PaymentModal({ device, command, amount, recipient, walle
     switch (paymentStatus) {
       case 'idle':
         return 'Ready to process payment';
-      case 'analyzing':
-        return 'Analyzing optimal payment method...';
       case 'processing':
-        if (paymentMethod === 'permit_transfer') return 'Signing permit transaction (gas-free)...';
-        if (paymentMethod === 'approve_transfer') return approvalNeeded ? 'Waiting for approval...' : 'Processing transfer...';
-        return 'Processing payment...';
+        return 'Processing USDC payment...';
       case 'confirming':
         return 'Confirming payment with device...';
       case 'completed':
@@ -132,19 +113,6 @@ export default function PaymentModal({ device, command, amount, recipient, walle
         return `❌ ${paymentError}`;
       default:
         return 'Processing...';
-    }
-  };
-
-  const getMethodDisplayName = (method: PaymentMethod) => {
-    switch (method) {
-      case 'permit_transfer':
-        return '⚡ EIP-2612 Permit (Gas-free)';
-      case 'approve_transfer':
-        return '🔄 Approve + Transfer';
-      case 'direct':
-        return '💸 Direct Transfer';
-      default:
-        return 'Payment Method';
     }
   };
 
@@ -184,18 +152,11 @@ export default function PaymentModal({ device, command, amount, recipient, walle
             <div className="bg-card border p-4 rounded-lg space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Method</span>
-                <span className="text-sm font-medium">{getMethodDisplayName(paymentMethod)}</span>
+                <span className="text-sm font-medium">💸 Direct USDC Transfer</span>
               </div>
               
-              {approvalNeeded && (
-                <div className="flex items-center space-x-2 text-sm text-amber-600">
-                  <span>⚠️</span>
-                  <span>ERC-20 approval required first</span>
-                </div>
-              )}
-              
               <div className="flex items-center space-x-2">
-                {paymentStatus === 'processing' || paymentStatus === 'analyzing' || paymentStatus === 'confirming' ? (
+                {paymentStatus === 'processing' || paymentStatus === 'confirming' ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                 ) : null}
                 <span className="text-sm">{getStatusMessage()}</span>
@@ -215,7 +176,7 @@ export default function PaymentModal({ device, command, amount, recipient, walle
             <Button
               variant="outline"
               onClick={onClose}
-              disabled={paymentStatus === 'processing' || paymentStatus === 'analyzing' || paymentStatus === 'confirming'}
+              disabled={paymentStatus === 'processing' || paymentStatus === 'confirming'}
               className="flex-1"
             >
               {paymentStatus === 'completed' ? 'Close' : 'Cancel'}
@@ -224,7 +185,7 @@ export default function PaymentModal({ device, command, amount, recipient, walle
             {paymentStatus !== 'completed' && (
               <Button
                 onClick={handlePayment}
-                disabled={paymentStatus === 'processing' || paymentStatus === 'analyzing' || paymentStatus === 'confirming'}
+                disabled={paymentStatus === 'processing' || paymentStatus === 'confirming'}
                 className="flex-1"
               >
                 {paymentStatus === 'idle' ? `Pay ${amount} USDC` : 'Processing...'}

@@ -4,7 +4,6 @@ import WalletConnection from '@/components/wallet-connection';
 import BalanceCard from '@/components/balance-card';
 import DeviceCard from '@/components/device-card';
 import PaymentModal from '@/components/payment-modal';
-import PaymentStatus from '@/components/payment-status';
 import TransactionHistory from '@/components/transaction-history';
 import SystemStatus from '@/components/system-status';
 import { useWebSocket } from '@/lib/websocket';
@@ -30,20 +29,20 @@ export default function Dashboard() {
     enabled: true
   });
 
-  // Fetch user data when wallet is connected
-  const { data: userData } = useQuery({
-    queryKey: ['/api/users', walletAddress],
+  // Fetch payment history when wallet is connected
+  const { data: paymentHistory = [] } = useQuery({
+    queryKey: ['/api/payments', walletAddress],
     enabled: !!walletAddress,
     queryFn: async () => {
-      if (!walletAddress) return null;
+      if (!walletAddress) return [];
       
-      const response = await fetch(`/api/users/${walletAddress}`, {
+      const response = await fetch(`/api/payments/${walletAddress}`, {
         credentials: 'include'
       });
       
       // Handle 404 gracefully - user doesn't exist yet
       if (response.status === 404) {
-        return null;
+        return [];
       }
       
       if (!response.ok) {
@@ -201,18 +200,16 @@ export default function Dashboard() {
                 device={device}
                 onCommand={handleDeviceCommand}
                 isWalletConnected={!!walletAddress}
-                userSessions={(userData as any)?.activeSessions || []}
+                userSessions={[]}
                 data-testid={`device-card-${device.id}`}
               />
             ))}
           </div>
 
-          {/* Right Column: Status & History */}
+          {/* Right Column: History & Status */}
           <div className="space-y-6">
-            <PaymentStatus data-testid="payment-status" />
-            
             <TransactionHistory 
-              transactions={(userData as any)?.paymentHistory || []}
+              transactions={paymentHistory}
               data-testid="transaction-history"
             />
             

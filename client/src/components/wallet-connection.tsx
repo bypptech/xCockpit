@@ -44,7 +44,7 @@ export default function WalletConnection({ walletAddress, onConnect, onDisconnec
         className="bg-primary hover:bg-primary/90 text-primary-foreground"
         data-testid="button-connect-wallet"
       >
-        <i className="fas fa-wallet mr-2"></i>
+        <i className="fas fa-wallet"></i>
         {isLoading ? 'Connecting...' : 'Connect Wallet'}
       </Button>
     );

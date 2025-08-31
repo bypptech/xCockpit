@@ -10,9 +10,9 @@ interface BalanceCardProps {
 }
 
 export default function BalanceCard({ walletAddress }: BalanceCardProps) {
-  const [usdcBalance, setUsdcBalance] = useState<string>('0.00');
+  const [usdcBalance, setUsdcBalance] = useState<string>('0.0000');
   const [ethBalance, setEthBalance] = useState<string>('0.0000');
-  const [previousUsdcBalance, setPreviousUsdcBalance] = useState<string>('0.00');
+  const [previousUsdcBalance, setPreviousUsdcBalance] = useState<string>('0.0000');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [networkInfo, setNetworkInfo] = useState<{ chainId: string; name: string } | null>(null);
@@ -33,7 +33,11 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
       
       // Listen for balance update events (e.g., after payment)
       const unsubscribe = balanceEvents.onBalanceUpdate(() => {
-        setTimeout(loadBalances, 1000); // Delay to ensure transaction is confirmed
+        // Multiple attempts to ensure balance is updated
+        setTimeout(loadBalances, 1000);   // 1 second
+        setTimeout(loadBalances, 3000);   // 3 seconds
+        setTimeout(loadBalances, 5000);   // 5 seconds
+        setTimeout(loadBalances, 10000);  // 10 seconds
       });
       
       return () => {
@@ -198,7 +202,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold text-primary">
-                  ${usdcBalance}
+                  ${parseFloat(usdcBalance).toFixed(4)}
                 </span>
                 {balanceChange === 'increase' && (
                   <TrendingUp className="h-4 w-4 text-green-500" />

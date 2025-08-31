@@ -29,6 +29,16 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    proxy: {
+      '/api': {
+        target: process.env.PORT ? `http://localhost:${process.env.PORT}` : 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      '/ws': {
+        target: process.env.PORT ? `ws://localhost:${process.env.PORT}` : 'ws://localhost:5001',
+        ws: true,
+      }
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

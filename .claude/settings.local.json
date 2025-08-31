@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(VITE_BACKEND_PORT=5001 npx vite --port 3000)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(PORT=5001 npm run dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

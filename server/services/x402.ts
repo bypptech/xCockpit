@@ -17,22 +17,18 @@ export interface X402PaymentResponse {
 
 export class X402Service {
   static calculateDevicePrice(deviceId: string, command: string): string {
-    // Device type-based pricing
-    const basePrice: Record<string, string> = {
-      'gacha': '0.01',
-      'lock': '0.005',
-      'light': '0.001'
+    // Device-specific pricing
+    const devicePricing: Record<string, string> = {
+      'ESP32_001': '0.01',  // Smart Gacha #001
+      'ESP32_002': '0.005', // Smart Gacha #002
     };
     
     // Time-based pricing (peak hours multiplier)
     const hour = new Date().getHours();
     const peakHourMultiplier = (hour >= 18 && hour <= 22) ? 1.5 : 1.0;
     
-    // Determine device type from deviceId
-    const deviceType = deviceId.includes('ESP32_001') ? 'gacha' : 
-                      deviceId.includes('ESP32_002') ? 'gacha' : 'gacha';
-    
-    const price = parseFloat(basePrice[deviceType] || '0.01') * peakHourMultiplier;
+    const basePrice = devicePricing[deviceId] || '0.01';
+    const price = parseFloat(basePrice) * peakHourMultiplier;
     return price.toFixed(3);
   }
 

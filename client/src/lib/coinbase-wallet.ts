@@ -216,7 +216,7 @@ class WalletService {
             
             // Return balance even if it's 0 (valid result from contract)
             console.log('✅ Successfully got USDC balance from:', usdcAddress, '→', balance);
-            return balance.toFixed(2);
+            return balance.toFixed(4);
           }
         } catch (err) {
           console.log('❌ Failed to get balance from', usdcAddress, ':', err);
@@ -226,10 +226,10 @@ class WalletService {
       
       // No balance found on any contract
       console.log('No USDC balance found on any contract');
-      return '0.00';
+      return '0.0000';
     } catch (error) {
       console.error('Failed to get USDC balance:', error);
-      return '0.00';
+      return '0.0000';
     }
   }
 
@@ -238,7 +238,17 @@ class WalletService {
       const usdcAddress = import.meta.env.VITE_USDC_CONTRACT_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
       
       // Convert amount to wei (6 decimals for USDC)
-      const amountWei = Math.floor(parseFloat(amount) * Math.pow(10, 6)).toString(16);
+      const amountFloat = parseFloat(amount);
+      const amountMicroUsdc = Math.floor(amountFloat * Math.pow(10, 6));
+      const amountWei = amountMicroUsdc.toString(16);
+      
+      console.log(`💳 USDC Payment Details:`, {
+        requestedAmount: amount,
+        amountFloat: amountFloat,
+        amountMicroUsdc: amountMicroUsdc,
+        amountWei: amountWei,
+        to: to
+      });
       
       // ERC-20 transfer function signature
       const transferData = `0xa9059cbb000000000000000000000000${to.slice(2)}${amountWei.padStart(64, '0')}`;
