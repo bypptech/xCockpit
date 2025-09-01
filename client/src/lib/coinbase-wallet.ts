@@ -154,12 +154,17 @@ class WalletService {
       
       // USDC contract addresses by network
       const usdcContracts: Record<string, string[]> = {
-        // Base Sepolia
+        // Base Sepolia (Chain ID 84532)
         '0x14a34': [
-          '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Primary (255k holders)
-          '0x8a04d904055528a69f3e4594dda308a31aeb8457', // Alternative (3k holders)
+          '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Primary USDC contract
+          '0x8a04d904055528a69f3e4594dda308a31aeb8457', // Alternative USDC contract
         ],
         '0x14A34': [
+          '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+          '0x8a04d904055528a69f3e4594dda308a31aeb8457',
+        ],
+        // Alternative chain ID formats for Base Sepolia
+        '84532': [
           '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
           '0x8a04d904055528a69f3e4594dda308a31aeb8457',
         ],
@@ -182,13 +187,24 @@ class WalletService {
       
       if (import.meta.env.VITE_USDC_CONTRACT_ADDRESS) {
         usdcAddresses = [import.meta.env.VITE_USDC_CONTRACT_ADDRESS];
+        console.log('Using custom USDC contract from env:', import.meta.env.VITE_USDC_CONTRACT_ADDRESS);
       } else if (usdcContracts[chainId]) {
         usdcAddresses = usdcContracts[chainId];
+        console.log('Found USDC contracts for chainId (hex):', chainId, usdcAddresses);
       } else if (usdcContracts[chainId.toLowerCase()]) {
         usdcAddresses = usdcContracts[chainId.toLowerCase()];
+        console.log('Found USDC contracts for chainId (lowercase hex):', chainId.toLowerCase(), usdcAddresses);
       } else {
-        console.warn('Unknown chain ID:', chainId);
-        return '0.00';
+        // Try decimal format for Base Sepolia (84532)
+        const chainIdDecimal = parseInt(chainId, 16).toString();
+        console.log('Trying decimal chain ID:', chainIdDecimal);
+        if (usdcContracts[chainIdDecimal]) {
+          usdcAddresses = usdcContracts[chainIdDecimal];
+          console.log('Found USDC contracts for chainId (decimal):', chainIdDecimal, usdcAddresses);
+        } else {
+          console.warn('Unknown chain ID (tried hex, lowercase, decimal):', chainId, 'decimal:', chainIdDecimal);
+          return '0.00';
+        }
       }
       
       // Try each address until we get a valid balance
@@ -211,16 +227,25 @@ class WalletService {
           
           if (result !== undefined && result !== null) {
             // Convert from wei (6 decimals for USDC)
-            const balance = parseInt(result, 16) / Math.pow(10, 6);
-            console.log('Parsed balance:', balance, 'from contract:', usdcAddress);
+            const balanceHex = result.toString();
+            const balanceRaw = parseInt(balanceHex, 16);
+            const balance = balanceRaw / Math.pow(10, 6);
+            
+            console.log('📊 USDC Balance Details:', {
+              contract: usdcAddress,
+              rawHex: balanceHex,
+              rawDecimal: balanceRaw,
+              finalBalance: balance,
+              chainId: await this.provider.request({ method: 'eth_chainId' })
+            });
             
             // Return balance even if it's 0 (valid result from contract)
-            console.log('✅ Successfully got USDC balance from:', usdcAddress, '→', balance);
+            console.log('✅ Successfully got USDC balance from:', usdcAddress, '→', balance.toFixed(4), 'USDC');
             return balance.toFixed(4);
           }
         } catch (err) {
-          console.log('❌ Failed to get balance from', usdcAddress, ':', err);
-          // Continue to next address
+          console.log('❌ Failed to get balance from', usdcAddress, 'on chain 84532:', err);
+          // Continue to next address - this is important for Base Sepolia compatibility
         }
       }
       

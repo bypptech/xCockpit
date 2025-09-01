@@ -33,11 +33,13 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
       
       // Listen for balance update events (e.g., after payment)
       const unsubscribe = balanceEvents.onBalanceUpdate(() => {
-        // Multiple attempts to ensure balance is updated
-        setTimeout(loadBalances, 1000);   // 1 second
+        console.log('🔄 Balance update event triggered - refreshing balances...');
+        // Multiple attempts to ensure balance is updated on Base Sepolia (84532)
+        setTimeout(loadBalances, 500);    // 0.5 seconds
+        setTimeout(loadBalances, 1500);   // 1.5 seconds  
         setTimeout(loadBalances, 3000);   // 3 seconds
-        setTimeout(loadBalances, 5000);   // 5 seconds
-        setTimeout(loadBalances, 10000);  // 10 seconds
+        setTimeout(loadBalances, 6000);   // 6 seconds
+        setTimeout(loadBalances, 12000);  // 12 seconds
       });
       
       return () => {
@@ -65,7 +67,14 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
       setWalletInfo(wallet);
       setLastUpdated(new Date());
       
-      console.log('Wallet Info:', wallet);
+      console.log('💰 Balance Update:', {
+        walletAddress,
+        usdcBalance: usdc,
+        ethBalance: eth,
+        network: network.name,
+        chainId: network.chainId,
+        walletInfo: wallet
+      });
     } catch (error) {
       console.error('Failed to load balances:', error);
     }
@@ -73,7 +82,10 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
 
   const handleRefreshBalance = async () => {
     setIsRefreshing(true);
+    console.log('🔄 Manual refresh triggered for chain 84532 (Base Sepolia)');
     await loadBalances();
+    // Force balance events to trigger for any listeners
+    balanceEvents.triggerBalanceUpdate();
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
