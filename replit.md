@@ -11,13 +11,14 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-- **Framework**: React 18 with TypeScript and Vite for fast development
+- **Framework**: Dual architecture - React 18/Vite (current) + Next.js 14 App Router (Mini App ready)
 - **UI System**: shadcn/ui components built on Radix UI primitives with Tailwind CSS
 - **State Management**: TanStack React Query for server state with custom hooks for local state
 - **Web3 Integration**: Coinbase Wallet SDK for wallet connection and USDC payments
 - **Real-time Communication**: WebSocket hooks for live device status updates
-- **Mini Apps Support**: Farcaster Frame integration with MiniAppProvider for social context
+- **Mini Apps Support**: Full Next.js App Router architecture with Farcaster Frame integration
 - **Social Features**: Viral sharing, achievements, leaderboards, and social proof mechanisms
+- **Base Mini App**: Complete Base ecosystem integration with Frame metadata and manifest endpoints
 
 ## Backend Architecture
 - **Runtime**: Node.js with Express.js and TypeScript
