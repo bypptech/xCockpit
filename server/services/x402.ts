@@ -1,6 +1,8 @@
 import { BlockchainVerifier } from './blockchain-verifier';
 import { orderManager, OrderValidation } from './order-manager';
 import { signatureVerifier, PaymentRequirements } from './signature-verifier';
+import { enhancedSignatureVerifier } from './enhanced-signature-verifier';
+import { jwsSignatureVerifier } from './jws-signature-verifier';
 
 export interface X402PaymentRequest {
   amount: string;
@@ -74,7 +76,27 @@ export class X402Service {
       callback: process.env.PAYMENT_CALLBACK_URL
     };
     
-    const { requirementsHeader, signature } = signatureVerifier.signPaymentRequirements(requirements);
+    // 署名システムの選択
+    const signatureStrategy = process.env.X402_SIGNATURE_STRATEGY || 'enhanced-hmac';
+    let requirementsHeader: string;
+    let signature: string;
+    
+    switch (signatureStrategy) {
+      case 'jws':
+        ({ requirementsHeader, signature } = jwsSignatureVerifier.signPaymentRequirements(requirements));
+        break;
+      case 'enhanced-hmac':
+      case 'v2':
+        ({ requirementsHeader, signature } = enhancedSignatureVerifier.signPaymentRequirementsV2(requirements));
+        break;
+      case 'dual':
+        // デュアル署名（JWSを優先、フォールバック用にHMAC）
+        ({ requirementsHeader, signature } = jwsSignatureVerifier.signPaymentRequirements(requirements));
+        break;
+      default:
+        // レガシーHMAC (v1)
+        ({ requirementsHeader, signature } = signatureVerifier.signPaymentRequirements(requirements));
+    }
     
     return {
       status: 402,
@@ -157,9 +179,65 @@ export class X402Service {
         this.initialize(process.env.NETWORK as 'mainnet' | 'sepolia' || 'sepolia');
       }
       
+      // 署名検証（複数方式対応）
       if (requirementsHeader && signatureHeader) {
-        if (!signatureVerifier.verifyPaymentRequirements(requirementsHeader, signatureHeader)) {
-          return { verified: false, error: 'Invalid signature' };
+        let verificationResult: any = null;
+        
+        // JWS署名の検証
+        if (signatureHeader.startsWith('jws=')) {
+          verificationResult = jwsSignatureVerifier.verifyPaymentRequirements(
+            requirementsHeader, 
+            signatureHeader
+          );
+          
+          if (process.env.DEBUG_X402 === 'true') {
+            console.log('JWS signature verification:', {
+              valid: verificationResult.valid,
+              algorithm: verificationResult.algorithm,
+              keyId: verificationResult.keyId,
+              issuedAt: verificationResult.issuedAt,
+              expiresAt: verificationResult.expiresAt
+            });
+          }
+        }
+        // Enhanced HMAC署名の検証
+        else if (signatureHeader.startsWith('v2=')) {
+          verificationResult = enhancedSignatureVerifier.verifyPaymentRequirements(
+            requirementsHeader, 
+            signatureHeader
+          );
+          
+          if (process.env.DEBUG_X402 === 'true') {
+            console.log('Enhanced HMAC signature verification:', {
+              valid: verificationResult.valid,
+              version: verificationResult.version,
+              keyId: verificationResult.keyId,
+              timestamp: verificationResult.timestamp
+            });
+          }
+        }
+        // レガシーHMAC署名の検証
+        else if (signatureHeader.startsWith('v1=')) {
+          const isValid = signatureVerifier.verifyPaymentRequirements(requirementsHeader, signatureHeader);
+          verificationResult = { valid: isValid, version: 'v1' };
+          
+          if (process.env.DEBUG_X402 === 'true') {
+            console.log('Legacy HMAC signature verification:', { valid: isValid });
+          }
+        }
+        else {
+          return { 
+            verified: false, 
+            error: 'Unsupported signature format' 
+          };
+        }
+        
+        if (!verificationResult || !verificationResult.valid) {
+          console.warn('Signature verification failed:', verificationResult);
+          return { 
+            verified: false, 
+            error: `Signature verification failed: ${verificationResult?.error || 'Unknown error'}` 
+          };
         }
       }
       
@@ -242,5 +320,140 @@ export class X402Service {
   ): string {
     const chain = network === 'mainnet' ? 'eip155:8453' : 'eip155:84532';
     return signatureVerifier.generatePaymentStateHeader(txHash, confirmations, chain);
+  }
+  
+  /**
+   * 署名システム管理機能
+   */
+  static getSignatureSystemInfo(): {
+    current: 'legacy' | 'enhanced' | 'jws' | 'dual';
+    strategy: string;
+    hmac?: any;
+    jws?: any;
+    validation: any;
+  } {
+    const strategy = process.env.X402_SIGNATURE_STRATEGY || 'enhanced-hmac';
+    const info: any = {
+      current: strategy === 'jws' ? 'jws' : 
+               strategy === 'dual' ? 'dual' :
+               strategy.includes('enhanced') || strategy === 'v2' ? 'enhanced' : 'legacy',
+      strategy
+    };
+    
+    // HMAC系の情報
+    if (strategy !== 'jws') {
+      info.hmac = {
+        keyInfo: enhancedSignatureVerifier.getKeyInfo(),
+        validation: enhancedSignatureVerifier.validateKeys(),
+        stats: enhancedSignatureVerifier.getStats()
+      };
+    }
+    
+    // JWS系の情報
+    if (strategy === 'jws' || strategy === 'dual') {
+      info.jws = {
+        keyInfo: jwsSignatureVerifier.getKeyInfo(),
+        validation: jwsSignatureVerifier.validateKeys(),
+        stats: jwsSignatureVerifier.getStats()
+      };
+    }
+    
+    // 全体的な検証
+    const allIssues = [
+      ...(info.hmac?.validation?.issues || []),
+      ...(info.jws?.validation?.issues || [])
+    ];
+    
+    info.validation = {
+      valid: allIssues.length === 0,
+      issues: allIssues
+    };
+    
+    return info;
+  }
+  
+  /**
+   * 鍵のローテーション（管理者機能）
+   */
+  static rotateSigningKey(
+    newKid: string, 
+    newSecret?: string, 
+    algorithm?: 'RS256' | 'ES256'
+  ): {
+    success: boolean;
+    error?: string;
+  } {
+    try {
+      const strategy = process.env.X402_SIGNATURE_STRATEGY || 'enhanced-hmac';
+      
+      if (strategy === 'jws' || strategy === 'dual') {
+        // JWS鍵のローテーション
+        jwsSignatureVerifier.rotateKey(newKid, algorithm || 'RS256');
+        return { success: true };
+      } else if (strategy.includes('enhanced') || strategy === 'v2') {
+        // HMAC鍵のローテーション
+        if (!newSecret) {
+          return { 
+            success: false, 
+            error: 'HMAC key rotation requires newSecret parameter' 
+          };
+        }
+        enhancedSignatureVerifier.rotateKey(newKid, newSecret);
+        return { success: true };
+      } else {
+        return { 
+          success: false, 
+          error: 'Key rotation requires Enhanced or JWS signature system' 
+        };
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+  
+  /**
+   * JWKS (JSON Web Key Set) の取得
+   */
+  static getJWKS(): any {
+    const strategy = process.env.X402_SIGNATURE_STRATEGY || 'enhanced-hmac';
+    
+    if (strategy === 'jws' || strategy === 'dual') {
+      return jwsSignatureVerifier.getJWKS();
+    } else {
+      return { 
+        error: 'JWKS is only available with JWS signature strategy',
+        keys: []
+      };
+    }
+  }
+  
+  /**
+   * システム健全性チェック
+   */
+  static healthCheck(): {
+    signature: { system: string; valid: boolean; issues: string[] };
+    blockchain: { connected: boolean; network: string };
+    orderManager: { active: boolean; cleanupNeeded: boolean };
+  } {
+    const signatureInfo = this.getSignatureSystemInfo();
+    
+    return {
+      signature: {
+        system: signatureInfo.current,
+        valid: signatureInfo.validation.valid,
+        issues: signatureInfo.validation.issues
+      },
+      blockchain: {
+        connected: !!this.blockchainVerifier,
+        network: process.env.NETWORK || 'sepolia'
+      },
+      orderManager: {
+        active: true, // OrderManagerは常にアクティブ
+        cleanupNeeded: false // 実装可能：期限切れorderの清理が必要かどうか
+      }
+    };
   }
 }

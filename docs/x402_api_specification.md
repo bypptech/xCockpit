@@ -1,1 +1,503 @@
-# x402 Enhanced API Specification\n\nBase Mainnet USDC対応の強化されたx402プロトコルAPI仕様書\n\n## 概要\n\n本仕様書は、現在のxCockpitプロジェクトで実装されているx402（HTTP 402 Payment Required）プロトコルの強化版について説明します。Base Mainnet USDC、HMAC署名、nonce管理、オンチェーン検証などの本格的な機能が含まれています。\n\n## バージョン情報\n\n| 項目 | 値 |\n|------|----|\n| API Version | v1.1 (Enhanced) |\n| Protocol | x402-exact |\n| Supported Networks | Base Mainnet (8453), Base Sepolia (84532) |\n| Supported Tokens | USDC |\n| Signature Algorithm | HMAC-SHA256 |\n\n## 🔄 プロトコルフロー\n\n```mermaid\nsequenceDiagram\n    participant Bob as Bob (Client)\n    participant API as Service API\n    participant Aris as Aris (IoT Device)\n    participant BC as Base Blockchain\n\n    Bob->>API: 1. Device Control Request\n    API->>API: 2. Generate order_id & nonce\n    API->>API: 3. Sign payment requirements\n    API->>Bob: 4. HTTP 402 + X-Payment headers\n    Bob->>Bob: 5. Verify signature (optional)\n    Bob->>BC: 6. USDC Transfer Transaction\n    BC->>BC: 7. Transaction included in block\n    Bob->>API: 8. Payment Proof + TX Hash\n    API->>BC: 9. Verify USDC transfer on-chain\n    API->>API: 10. Consume nonce (prevent replay)\n    API->>Aris: 11. Execute device command\n    API->>Bob: 12. Success response + payment state\n```\n\n## 📡 API エンドポイント\n\n### デバイス制御要求\n\n**Endpoint**: `POST /api/device/{deviceId}/{command}`\n\n**Parameters**:\n- `deviceId` (string): デバイスID（例: ESP32_001, ESP32_002）\n- `command` (string): 実行コマンド（例: dispense, reset）\n\n**Request Headers**:\n```http\nContent-Type: application/json\nAuthorization: Bearer {access_token}\n```\n\n**Response (Payment Required)**:\n\n```http\nHTTP/1.1 402 Payment Required\nContent-Type: application/json\nWWW-Authenticate: Payment\nX-Payment-Requirements: scheme=\"x402-exact\", chain=\"eip155:8453\", token=\"erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\", amount=\"0.01\", currency=\"USDC\", to=\"0x1c7d4b196cb0c7b01d743fbc6116a902379c7238\", min_confirmations=\"0\", order_id=\"ord_7QmZ3f\", nonce=\"nx_9d8aef\", nonce_exp=\"2025-09-01T09:05:00Z\", callback=\"https://api.example.com/payhooks/base\"\nX-Payment-Signature: v1=a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456\n\n{\n  \"message\": \"Payment Required\",\n  \"orderId\": \"ord_7QmZ3f\",\n  \"nonce\": \"nx_9d8aef\",\n  \"expiresAt\": \"2025-09-01T09:05:00Z\",\n  \"payment\": {\n    \"accepts\": [{\n      \"scheme\": \"x402-exact\",\n      \"network\": \"eip155:8453\",\n      \"asset\": \"erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\",\n      \"amount\": \"0.01\",\n      \"recipient\": \"0x1c7d4b196cb0c7b01d743fbc6116a902379c7238\",\n      \"minConfirmations\": 0\n    }],\n    \"metadata\": {\n      \"deviceId\": \"ESP32_001\",\n      \"command\": \"dispense\",\n      \"orderId\": \"ord_7QmZ3f\",\n      \"timestamp\": \"2025-09-01T09:00:00Z\"\n    }\n  }\n}\n```\n\n### 支払い証明送信\n\n**Endpoint**: `POST /api/payment/verify`\n\n**Request Headers**:\n```http\nContent-Type: application/json\nAuthorization: Bearer {access_token}\nX-Payment-Requirements: {original_requirements_header}\nX-Payment-Signature: {original_signature_header}\n```\n\n**Request Body**:\n```json\n{\n  \"amount\": \"0.01\",\n  \"currency\": \"USDC\",\n  \"network\": \"eip155:8453\",\n  \"recipient\": \"0x1c7d4b196cb0c7b01d743fbc6116a902379c7238\",\n  \"minConfirmations\": 0,\n  \"metadata\": {\n    \"orderId\": \"ord_7QmZ3f\",\n    \"nonce\": \"nx_9d8aef\",\n    \"txHash\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n    \"deviceId\": \"ESP32_001\",\n    \"command\": \"dispense\"\n  }\n}\n```\n\n**Response (Success)**:\n```http\nHTTP/1.1 200 OK\nContent-Type: application/json\nX-Payment-State: paid; chain=\"eip155:8453\"; tx_hash=\"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\"; confirmations=\"3\"\n\n{\n  \"result\": \"success\",\n  \"command\": \"dispense\",\n  \"deviceId\": \"ESP32_001\",\n  \"paymentId\": \"pay_abc123\",\n  \"txHash\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"confirmations\": 3,\n  \"amount\": \"0.01\",\n  \"currency\": \"USDC\",\n  \"timestamp\": \"2025-09-01T09:02:30Z\",\n  \"expiresIn\": 30\n}\n```\n\n## 🔐 セキュリティヘッダー\n\n### X-Payment-Requirements\n\n支払い要件を含むヘッダー。以下のフィールドをカンマ区切りで含む：\n\n| フィールド | 必須 | 説明 | 例 |\n|-----------|------|------|----|\n| `scheme` | ✅ | 支払いスキーム | `\"x402-exact\"` |\n| `chain` | ✅ | ブロックチェーンID | `\"eip155:8453\"` |\n| `token` | ✅ | トークンアドレス | `\"erc20:0x833589...\"` |\n| `amount` | ✅ | 支払い金額 | `\"12.34\"` |\n| `currency` | ✅ | 通貨単位 | `\"USDC\"` |\n| `to` | ✅ | 受取アドレス | `\"0x1c7d4b...\"` |\n| `min_confirmations` | ✅ | 最小確認数 | `\"0\"` |\n| `order_id` | ✅ | オーダーID | `\"ord_7QmZ3f\"` |\n| `nonce` | ✅ | ワンタイムnonce | `\"nx_9d8aef\"` |\n| `nonce_exp` | ✅ | nonce期限 | `\"2025-09-01T09:05:00Z\"` |\n| `callback` | ❌ | コールバックURL | `\"https://...\"` |\n\n### X-Payment-Signature\n\nHMAC-SHA256署名ヘッダー：\n\n```\nX-Payment-Signature: v1={hex_encoded_hmac_sha256}\n```\n\n**署名データ**: X-Payment-Requirementsヘッダーの値\n**アルゴリズム**: HMAC-SHA256\n**秘密鍵**: サーバー側で管理される共有秘密\n\n### X-Payment-State\n\n支払い状態を示すレスポンスヘッダー：\n\n```\nX-Payment-State: paid; chain=\"eip155:8453\"; tx_hash=\"0x...\"; confirmations=\"3\"\n```\n\n## 💰 料金体系\n\n### デバイス別料金設定\n\n| デバイスID | 基本料金 | 説明 |\n|-----------|---------|------|\n| `ESP32_001` | $0.01 USDC | Smart Gacha #001 |\n| `ESP32_002` | $0.005 USDC | Smart Gacha #002 |\n| その他 | $0.01 USDC | デフォルト料金 |\n\n### 時間帯別料金\n\n- **通常時間**: 基本料金\n- **ピーク時間（18:00-22:00）**: 基本料金 × 1.5\n\n### 確認数による料金調整\n\n確認数によって料金調整はしませんが、推奨設定：\n\n| 金額範囲 | 推奨確認数 | 理由 |\n|---------|-----------|------|\n| < $1 | 0 | 即時性重視 |\n| $1-$10 | 2 | バランス |\n| > $10 | 3 | 安全性重視 |\n\n## 🔗 ネットワーク設定\n\n### Base Mainnet (本番)\n\n| 項目 | 値 |\n|------|----|\n| Chain ID | 8453 |\n| Network ID | `eip155:8453` |\n| RPC URL | `https://mainnet.base.org` |\n| USDC Contract | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |\n| Explorer | `https://basescan.org` |\n\n### Base Sepolia (開発/テスト)\n\n| 項目 | 値 |\n|------|----|\n| Chain ID | 84532 |\n| Network ID | `eip155:84532` |\n| RPC URL | `https://sepolia.base.org` |\n| USDC Contract | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |\n| Explorer | `https://sepolia.basescan.org` |\n\n## 🔍 検証ロジック\n\n### 段階的検証プロセス\n\n1. **署名検証** (Optional)\n   ```typescript\n   const isValidSignature = signatureVerifier.verifyPaymentRequirements(\n     requirementsHeader, \n     signatureHeader\n   );\n   ```\n\n2. **Order/Nonce検証**\n   ```typescript\n   const orderValidation = orderManager.validateOrder(orderId, nonce);\n   if (!orderValidation.valid) throw new Error(orderValidation.error);\n   ```\n\n3. **オンチェーン検証**\n   ```typescript\n   const blockchainResult = await blockchainVerifier.verifyUSDCTransfer({\n     txHash,\n     expectedTo: recipient,\n     minAmount: amount,\n     minConfirmations: minConfirmations || 0\n   });\n   ```\n\n4. **Nonce消費** (リプレイ攻撃防止)\n   ```typescript\n   const consumed = orderManager.consumeOrder(orderId, nonce, txHash);\n   ```\n\n### フェイルセーフ機能\n\n```typescript\n// 段階的な機能有効化\nif (process.env.ENHANCED_X402 !== 'true') {\n  // 基本検証（後方互換性）\n  return basicVerification(payment);\n}\n\n// ネットワーク自動選択\nconst network = process.env.NETWORK === 'mainnet' ? 'mainnet' : 'sepolia';\n```\n\n## ⚠️ エラーレスポンス\n\n### 共通エラー形式\n\n```json\n{\n  \"error\": {\n    \"code\": \"PAYMENT_VERIFICATION_FAILED\",\n    \"message\": \"Blockchain verification failed: insufficient amount\",\n    \"details\": {\n      \"expected\": \"0.01\",\n      \"actual\": \"0.005\",\n      \"txHash\": \"0x...\"\n    }\n  }\n}\n```\n\n### エラーコード一覧\n\n| コード | HTTP Status | 説明 |\n|-------|-------------|------|\n| `PAYMENT_REQUIRED` | 402 | 支払いが必要 |\n| `INVALID_SIGNATURE` | 400 | 署名検証失敗 |\n| `ORDER_NOT_FOUND` | 400 | オーダーが存在しない |\n| `ORDER_EXPIRED` | 400 | オーダーが期限切れ |\n| `ORDER_ALREADY_USED` | 400 | オーダーが既に使用済み |\n| `INVALID_NONCE` | 400 | 無効なnonce |\n| `TRANSACTION_NOT_FOUND` | 400 | トランザクションが見つからない |\n| `TRANSACTION_FAILED` | 400 | トランザクション実行失敗 |\n| `INSUFFICIENT_AMOUNT` | 400 | 支払い金額不足 |\n| `INSUFFICIENT_CONFIRMATIONS` | 400 | 確認数不足 |\n| `INVALID_RECIPIENT` | 400 | 受取アドレスが不正 |\n| `BLOCKCHAIN_VERIFICATION_FAILED` | 500 | ブロックチェーン検証エラー |\n| `DEVICE_CONTROL_FAILED` | 500 | デバイス制御失敗 |\n\n### 詳細エラー例\n\n#### 支払い金額不足\n```json\n{\n  \"error\": {\n    \"code\": \"INSUFFICIENT_AMOUNT\",\n    \"message\": \"Payment amount is insufficient\",\n    \"details\": {\n      \"required\": \"0.01\",\n      \"received\": \"0.005\",\n      \"difference\": \"0.005\"\n    }\n  }\n}\n```\n\n#### 確認数不足\n```json\n{\n  \"error\": {\n    \"code\": \"INSUFFICIENT_CONFIRMATIONS\",\n    \"message\": \"Transaction requires more confirmations\",\n    \"details\": {\n      \"current\": 1,\n      \"required\": 3,\n      \"estimated_wait\": \"30 seconds\"\n    }\n  }\n}\n```\n\n## 📊 レート制限\n\n### API制限\n\n| エンドポイント | 制限 | ウィンドウ |\n|---------------|------|----------|\n| デバイス制御要求 | 10回/分 | 1分 |\n| 支払い証明送信 | 20回/分 | 1分 |\n| 一般API | 100回/分 | 1分 |\n\n### Order生成制限\n\n- 同時アクティブOrder数: 5個/ユーザー\n- Order生存期間: 5分（デフォルト）\n- Nonce再利用防止: 永続（使用済みnonce）\n\n## 🔧 開発者向けツール\n\n### cURLでのテスト例\n\n#### 1. デバイス制御要求\n```bash\ncurl -X POST http://localhost:5000/api/device/ESP32_001/dispense \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer your-token\"\n```\n\n#### 2. 支払い証明送信\n```bash\ncurl -X POST http://localhost:5000/api/payment/verify \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer your-token\" \\\n  -H \"X-Payment-Requirements: scheme=\\\"x402-exact\\\", ...\" \\\n  -H \"X-Payment-Signature: v1=...\" \\\n  -d '{\n    \"amount\": \"0.01\",\n    \"currency\": \"USDC\",\n    \"network\": \"eip155:8453\",\n    \"recipient\": \"0x1c7d4b196cb0c7b01d743fbc6116a902379c7238\",\n    \"metadata\": {\n      \"orderId\": \"ord_7QmZ3f\",\n      \"nonce\": \"nx_9d8aef\",\n      \"txHash\": \"0x...\"\n    }\n  }'\n```\n\n### JavaScript SDKサンプル\n\n```javascript\nclass X402Client {\n  constructor(apiUrl, accessToken) {\n    this.apiUrl = apiUrl;\n    this.accessToken = accessToken;\n  }\n  \n  async requestPayment(deviceId, command) {\n    const response = await fetch(`${this.apiUrl}/api/device/${deviceId}/${command}`, {\n      method: 'POST',\n      headers: {\n        'Authorization': `Bearer ${this.accessToken}`,\n        'Content-Type': 'application/json'\n      }\n    });\n    \n    if (response.status === 402) {\n      return {\n        paymentRequired: true,\n        requirements: response.headers.get('X-Payment-Requirements'),\n        signature: response.headers.get('X-Payment-Signature'),\n        data: await response.json()\n      };\n    }\n    \n    return await response.json();\n  }\n  \n  async submitPayment(paymentData, requirements, signature) {\n    const response = await fetch(`${this.apiUrl}/api/payment/verify`, {\n      method: 'POST',\n      headers: {\n        'Authorization': `Bearer ${this.accessToken}`,\n        'Content-Type': 'application/json',\n        'X-Payment-Requirements': requirements,\n        'X-Payment-Signature': signature\n      },\n      body: JSON.stringify(paymentData)\n    });\n    \n    return {\n      success: response.ok,\n      paymentState: response.headers.get('X-Payment-State'),\n      data: await response.json()\n    };\n  }\n}\n\n// 使用例\nconst client = new X402Client('http://localhost:5000', 'your-token');\n\n// Step 1: 支払い要求\nconst paymentRequest = await client.requestPayment('ESP32_001', 'dispense');\nif (paymentRequest.paymentRequired) {\n  console.log('Payment required:', paymentRequest.data);\n  \n  // Step 2: USDC支払い実行 (MetaMask等)\n  // ...\n  \n  // Step 3: 支払い証明送信\n  const result = await client.submitPayment({\n    amount: '0.01',\n    currency: 'USDC',\n    network: 'eip155:8453',\n    recipient: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238',\n    metadata: {\n      orderId: paymentRequest.data.orderId,\n      nonce: paymentRequest.data.nonce,\n      txHash: '0x...'\n    }\n  }, paymentRequest.requirements, paymentRequest.signature);\n  \n  console.log('Payment result:', result);\n}\n```\n\n## 🚀 本番運用チェックリスト\n\n### セキュリティ\n- [ ] HMAC秘密鍵が適切に生成・管理されている\n- [ ] 本番用ウォレットアドレスが設定されている\n- [ ] RPC エンドポイントが信頼できるプロバイダー\n- [ ] HTTPS通信の強制\n- [ ] レート制限の設定\n\n### 監視\n- [ ] 支払い成功率の監視\n- [ ] ブロックチェーン応答時間の監視\n- [ ] エラー率の監視\n- [ ] ウォレット残高の監視\n\n### バックアップ\n- [ ] 設定ファイルのバックアップ\n- [ ] ウォレット秘密鍵のセキュアな保管\n- [ ] ログのローテーション設定\n\n---\n\n**本API仕様書は、x402プロトコルの強化版実装に関する完全なガイドです。ご質問やフィードバックがございましたら、開発チームまでお気軽にご連絡ください。**"
+# x402 Enhanced API Specification
+
+Base Mainnet USDC対応の強化されたx402プロトコルAPI仕様書
+
+## 概要
+
+本仕様書は、現在のxCockpitプロジェクトで実装されているx402（HTTP 402 Payment Required）プロトコルの強化版について説明します。Base Mainnet USDC、HMAC署名、nonce管理、オンチェーン検証などの本格的な機能が含まれています。
+
+**重要**: 本実装は **x402標準準拠** の再送モデルを採用しており、同じリソースにX-Paymentヘッダーを付けて再送する方式を実装しています。
+
+## バージョン情報
+
+| 項目 | 値 |
+|------|----| 
+| API Version | v1.1 (Enhanced) |
+| Protocol | x402-exact |
+| Supported Networks | Base Mainnet (8453), Base Sepolia (84532) |
+| Supported Tokens | USDC |
+| Signature Algorithm | HMAC-SHA256 |
+
+## 🔄 x402標準プロトコルフロー
+
+```mermaid
+sequenceDiagram
+    participant Bob as Bob (Client)
+    participant API as Service API
+    participant Aris as Aris (IoT Device)
+    participant BC as Base Blockchain
+
+    Bob->>API: 1. POST /api/devices/{id}/commands/{command}
+    API->>API: 2. Generate order_id & nonce
+    API->>API: 3. Sign payment requirements
+    API->>Bob: 4. HTTP 402 + X-Payment headers
+    Bob->>Bob: 5. Verify signature (optional)
+    Bob->>BC: 6. USDC Transfer Transaction
+    BC->>BC: 7. Transaction included in block
+    Bob->>API: 8. POST /api/devices/{id}/commands/{command} (RETRY with X-Payment)
+    API->>BC: 9. Verify USDC transfer on-chain
+    API->>API: 10. Consume nonce (prevent replay)
+    API->>Aris: 11. Execute device command
+    API->>Bob: 12. Success response + X-Payment-State header
+```
+
+## 📡 API エンドポイント
+
+### デバイス制御要求 (初回)
+
+**Endpoint**: `POST /api/devices/{deviceId}/commands/{command}`
+
+**Parameters**:
+- `deviceId` (string): デバイスID（例: ESP32_001, ESP32_002）
+- `command` (string): 実行コマンド（例: dispense, reset）
+
+**Request Headers**:
+```http
+Content-Type: application/json
+Authorization: Bearer {access_token}
+```
+
+**Response (Payment Required)**:
+
+```http
+HTTP/1.1 402 Payment Required
+Content-Type: application/json
+WWW-Authenticate: Payment
+X-Payment-Requirements: scheme="x402-exact", chain="eip155:8453", token="erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", amount="0.01", currency="USDC", to="0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", min_confirmations="0", order_id="ord_7QmZ3f", nonce="nx_9d8aef", nonce_exp="2025-09-01T09:05:00Z", callback="https://api.example.com/payhooks/base"
+X-Payment-Signature: v1=a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456
+
+{
+  "message": "Payment Required",
+  "orderId": "ord_7QmZ3f",
+  "nonce": "nx_9d8aef",
+  "expiresAt": "2025-09-01T09:05:00Z",
+  "payment": {
+    "accepts": [{
+      "scheme": "x402-exact",
+      "network": "eip155:8453",
+      "asset": "erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amount": "0.01",
+      "recipient": "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
+      "minConfirmations": 0
+    }],
+    "metadata": {
+      "deviceId": "ESP32_001",
+      "command": "dispense",
+      "orderId": "ord_7QmZ3f",
+      "timestamp": "2025-09-01T09:00:00Z"
+    }
+  }
+}
+```
+
+### デバイス制御要求 (支払い証明付き再送) ⭐ x402標準準拠
+
+**Endpoint**: `POST /api/devices/{deviceId}/commands/{command}` ※同じリソースに再送信
+
+**Request Headers**:
+```http
+Content-Type: application/json
+Authorization: Bearer {access_token}
+X-Payment: base64(payment_data)
+X-Payment-Requirements: {original_requirements_header}
+X-Payment-Signature: {original_signature_header}
+```
+
+**X-Payment Header** (Base64エンコード前のデータ):
+```json
+{
+  "amount": "0.01",
+  "currency": "USDC",
+  "network": "eip155:8453",
+  "recipient": "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
+  "minConfirmations": 0,
+  "metadata": {
+    "orderId": "ord_7QmZ3f",
+    "nonce": "nx_9d8aef",
+    "txHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    "deviceId": "ESP32_001",
+    "command": "dispense",
+    "walletAddress": "0xuser_wallet_address"
+  }
+}
+```
+
+**Request Body** (オプション):
+```json
+{
+  "walletAddress": "0xuser_wallet_address"
+}
+```
+
+**Response (Success)**:
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Payment-State: paid; chain="eip155:8453"; tx_hash="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; confirmations="3"
+
+{
+  "result": "dispense",
+  "deviceId": "ESP32_001",
+  "paymentId": "pay_abc123",
+  "txHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "confirmations": 3,
+  "amount": "0.01",
+  "currency": "USDC",
+  "timestamp": "2025-09-01T09:02:30Z",
+  "expiresIn": 30
+}
+```
+
+## 🔐 セキュリティヘッダー
+
+### X-Payment-Requirements
+
+支払い要件を含むヘッダー。以下のフィールドをカンマ区切りで含む：
+
+| フィールド | 必須 | 説明 | 例 |
+|-----------|------|------|----| 
+| `scheme` | ✅ | 支払いスキーム | `"x402-exact"` |
+| `chain` | ✅ | ブロックチェーンID | `"eip155:8453"` |
+| `token` | ✅ | トークンアドレス | `"erc20:0x833589..."` |
+| `amount` | ✅ | 支払い金額 | `"12.34"` |
+| `currency` | ✅ | 通貨単位 | `"USDC"` |
+| `to` | ✅ | 受取アドレス | `"0x1c7d4b..."` |
+| `min_confirmations` | ✅ | 最小確認数 | `"0"` |
+| `order_id` | ✅ | オーダーID | `"ord_7QmZ3f"` |
+| `nonce` | ✅ | ワンタイムnonce | `"nx_9d8aef"` |
+| `nonce_exp` | ✅ | nonce期限 | `"2025-09-01T09:05:00Z"` |
+| `callback` | ❌ | コールバックURL | `"https://..."` |
+
+### X-Payment-Signature
+
+HMAC-SHA256署名ヘッダー：
+
+```
+X-Payment-Signature: v1={hex_encoded_hmac_sha256}
+```
+
+**署名データ**: X-Payment-Requirementsヘッダーの値
+**アルゴリズム**: HMAC-SHA256
+**秘密鍵**: サーバー側で管理される共有秘密
+
+### X-Payment-State
+
+支払い状態を示すレスポンスヘッダー：
+
+```
+X-Payment-State: paid; chain="eip155:8453"; tx_hash="0x..."; confirmations="3"
+```
+
+## 💰 料金体系
+
+### デバイス別料金設定
+
+| デバイスID | 基本料金 | 説明 |
+|-----------|---------|------|
+| `ESP32_001` | $0.01 USDC | Smart Gacha #001 |
+| `ESP32_002` | $0.005 USDC | Smart Gacha #002 |
+| その他 | $0.01 USDC | デフォルト料金 |
+
+### 時間帯別料金
+
+- **通常時間**: 基本料金
+- **ピーク時間（18:00-22:00）**: 基本料金 × 1.5
+
+### 確認数による料金調整
+
+確認数によって料金調整はしませんが、推奨設定：
+
+| 金額範囲 | 推奨確認数 | 理由 |
+|---------|-----------|------|
+| < $1 | 0 | 即時性重視 |
+| $1-$10 | 2 | バランス |
+| > $10 | 3 | 安全性重視 |
+
+## 🔗 ネットワーク設定
+
+### Base Mainnet (本番)
+
+| 項目 | 値 |
+|------|----| 
+| Chain ID | 8453 |
+| Network ID | `eip155:8453` |
+| RPC URL | `https://mainnet.base.org` |
+| USDC Contract | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Explorer | `https://basescan.org` |
+
+### Base Sepolia (開発/テスト)
+
+| 項目 | 値 |
+|------|----| 
+| Chain ID | 84532 |
+| Network ID | `eip155:84532` |
+| RPC URL | `https://sepolia.base.org` |
+| USDC Contract | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| Explorer | `https://sepolia.basescan.org` |
+
+## 🔍 検証ロジック
+
+### 段階的検証プロセス
+
+1. **署名検証** (HMAC-SHA256)
+   ```typescript
+   const isValidSignature = signatureVerifier.verifyPaymentRequirements(
+     requirementsHeader, 
+     signatureHeader
+   );
+   ```
+
+2. **Order/Nonce検証**
+   ```typescript
+   const orderValidation = orderManager.validateOrder(orderId, nonce);
+   if (!orderValidation.valid) throw new Error(orderValidation.error);
+   ```
+
+3. **オンチェーン検証**
+   ```typescript
+   const blockchainResult = await blockchainVerifier.verifyUSDCTransfer({
+     txHash,
+     expectedTo: recipient,
+     minAmount: amount,
+     minConfirmations: minConfirmations || 0
+   });
+   ```
+
+4. **Nonce消費** (リプレイ攻撃防止)
+   ```typescript
+   const consumed = orderManager.consumeOrder(orderId, nonce, txHash);
+   ```
+
+### フェイルセーフ機能
+
+```typescript
+// 段階的な機能有効化
+if (process.env.ENHANCED_X402 !== 'true') {
+  // 基本検証（後方互換性）
+  return basicVerification(payment);
+}
+
+// ネットワーク自動選択
+const network = process.env.NETWORK === 'mainnet' ? 'mainnet' : 'sepolia';
+```
+
+## ⚠️ エラーレスポンス
+
+### 共通エラー形式
+
+```json
+{
+  "error": {
+    "code": "PAYMENT_VERIFICATION_FAILED",
+    "message": "Blockchain verification failed: insufficient amount",
+    "details": {
+      "expected": "0.01",
+      "actual": "0.005",
+      "txHash": "0x..."
+    }
+  }
+}
+```
+
+### エラーコード一覧
+
+| コード | HTTP Status | 説明 |
+|-------|-------------|------|
+| `PAYMENT_REQUIRED` | 402 | 支払いが必要 |
+| `INVALID_PAYMENT_HEADER` | 400 | X-Paymentヘッダー形式エラー |
+| `INVALID_SIGNATURE` | 400 | 署名検証失敗 |
+| `ORDER_NOT_FOUND` | 400 | オーダーが存在しない |
+| `ORDER_EXPIRED` | 400 | オーダーが期限切れ |
+| `ORDER_ALREADY_USED` | 400 | オーダーが既に使用済み |
+| `INVALID_NONCE` | 400 | 無効なnonce |
+| `TRANSACTION_NOT_FOUND` | 400 | トランザクションが見つからない |
+| `TRANSACTION_FAILED` | 400 | トランザクション実行失敗 |
+| `INSUFFICIENT_AMOUNT` | 400 | 支払い金額不足 |
+| `INSUFFICIENT_CONFIRMATIONS` | 400 | 確認数不足 |
+| `INVALID_RECIPIENT` | 400 | 受取アドレスが不正 |
+| `BLOCKCHAIN_VERIFICATION_FAILED` | 500 | ブロックチェーン検証エラー |
+| `DEVICE_COMMAND_FAILED` | 500 | デバイス制御失敗 |
+
+### 詳細エラー例
+
+#### 支払い金額不足
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_AMOUNT",
+    "message": "Payment amount is insufficient",
+    "details": {
+      "required": "0.01",
+      "received": "0.005",
+      "difference": "0.005"
+    }
+  }
+}
+```
+
+#### 確認数不足
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_CONFIRMATIONS",
+    "message": "Transaction requires more confirmations",
+    "details": {
+      "current": 1,
+      "required": 3,
+      "estimated_wait": "30 seconds"
+    }
+  }
+}
+```
+
+## 📊 レート制限
+
+### API制限
+
+| エンドポイント | 制限 | ウィンドウ |
+|---------------|------|----------|
+| デバイス制御要求 | 10回/分 | 1分 |
+| 一般API | 100回/分 | 1分 |
+
+### Order生成制限
+
+- 同時アクティブOrder数: 5個/ユーザー
+- Order生存期間: 5分（デフォルト）
+- Nonce再利用防止: 永続（使用済みnonce）
+
+## 🔧 開発者向けツール
+
+### cURLでのテスト例
+
+#### 1. デバイス制御要求 (初回)
+```bash
+curl -X POST http://localhost:5001/api/devices/ESP32_001/commands/dispense \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token"
+```
+
+#### 2. x402標準準拠 支払い証明付き再送
+```bash
+# X-Paymentヘッダー用のBase64データ作成
+PAYMENT_DATA='{"amount":"0.01","currency":"USDC","network":"eip155:8453","recipient":"0x1c7d4b196cb0c7b01d743fbc6116a902379c7238","metadata":{"orderId":"ord_7QmZ3f","nonce":"nx_9d8aef","txHash":"0x...","deviceId":"ESP32_001","command":"dispense"}}'
+PAYMENT_B64=$(echo -n "$PAYMENT_DATA" | base64 -w 0)
+
+curl -X POST http://localhost:5001/api/devices/ESP32_001/commands/dispense \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token" \
+  -H "X-Payment: $PAYMENT_B64" \
+  -H "X-Payment-Requirements: scheme=\"x402-exact\", ..." \
+  -H "X-Payment-Signature: v1=..." \
+  -d '{"walletAddress": "0xuser_wallet_address"}'
+```
+
+### JavaScript SDKサンプル
+
+```javascript
+class X402Client {
+  constructor(apiUrl, accessToken) {
+    this.apiUrl = apiUrl;
+    this.accessToken = accessToken;
+  }
+  
+  async requestPayment(deviceId, command) {
+    const response = await fetch(`${this.apiUrl}/api/devices/${deviceId}/commands/${command}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.status === 402) {
+      return {
+        paymentRequired: true,
+        requirements: response.headers.get('X-Payment-Requirements'),
+        signature: response.headers.get('X-Payment-Signature'),
+        data: await response.json()
+      };
+    }
+    
+    return await response.json();
+  }
+  
+  async submitPayment(deviceId, command, paymentData, requirements, signature) {
+    // x402標準準拠: 同じリソースに X-Payment ヘッダーを付けて再送
+    const paymentHeader = btoa(JSON.stringify(paymentData));
+    
+    const response = await fetch(`${this.apiUrl}/api/devices/${deviceId}/commands/${command}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Payment': paymentHeader,
+        'X-Payment-Requirements': requirements,
+        'X-Payment-Signature': signature
+      },
+      body: JSON.stringify({
+        walletAddress: paymentData.metadata?.walletAddress
+      })
+    });
+    
+    return {
+      success: response.ok,
+      paymentState: response.headers.get('X-Payment-State'),
+      data: await response.json()
+    };
+  }
+}
+
+// 使用例
+const client = new X402Client('http://localhost:5001', 'your-token');
+
+// Step 1: 支払い要求
+const paymentRequest = await client.requestPayment('ESP32_001', 'dispense');
+if (paymentRequest.paymentRequired) {
+  console.log('Payment required:', paymentRequest.data);
+  
+  // Step 2: USDC支払い実行 (MetaMask等)
+  // ...
+  
+  // Step 3: x402標準準拠 支払い証明再送
+  const result = await client.submitPayment('ESP32_001', 'dispense', {
+    amount: '0.01',
+    currency: 'USDC',
+    network: 'eip155:8453',
+    recipient: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238',
+    metadata: {
+      orderId: paymentRequest.data.orderId,
+      nonce: paymentRequest.data.nonce,
+      txHash: '0x...',
+      deviceId: 'ESP32_001',
+      command: 'dispense',
+      walletAddress: '0xuser_wallet_address'
+    }
+  }, paymentRequest.requirements, paymentRequest.signature);
+  
+  console.log('Payment result:', result);
+}
+```
+
+## 🚀 本番運用チェックリスト
+
+### セキュリティ
+- [ ] HMAC秘密鍵が適切に生成・管理されている
+- [ ] 本番用ウォレットアドレスが設定されている
+- [ ] RPC エンドポイントが信頼できるプロバイダー
+- [ ] HTTPS通信の強制
+- [ ] レート制限の設定
+
+### 監視
+- [ ] 支払い成功率の監視
+- [ ] ブロックチェーン応答時間の監視
+- [ ] エラー率の監視
+- [ ] ウォレット残高の監視
+
+### バックアップ
+- [ ] 設定ファイルのバックアップ
+- [ ] ウォレット秘密鍵のセキュアな保管
+- [ ] ログのローテーション設定
+
+---
+
+**本API仕様書は、x402標準準拠の強化版実装に関する完全なガイドです。同じリソースへの再送方式により、真のx402プロトコル互換性を実現しています。**

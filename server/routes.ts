@@ -37,11 +37,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Execute device command (x402 flow)
+  // Execute device command (x402 standard flow)
   app.post("/api/devices/:id/commands/:command", async (req, res) => {
     try {
       const { id: deviceId, command } = req.params;
       const paymentHeader = req.headers['x-payment'] as string;
+      const requirementsHeader = req.headers['x-payment-requirements'] as string;
+      const signatureHeader = req.headers['x-payment-signature'] as string;
 
       // Get device info
       const device = await storage.getDevice(deviceId);
@@ -49,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Device not found" });
       }
 
-      // If no payment header, return 402 Payment Required
+      // If no payment header, return 402 Payment Required (initial request)
       if (!paymentHeader) {
         console.log(`💰 402 Payment Required for ${deviceId} - ${command}`);
         const response = X402Service.create402Response(deviceId, command);
@@ -58,15 +60,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json(response.body);
       }
 
-      // Parse and verify payment
+      // Parse and verify payment (re-request with X-Payment header)
       const payment = X402Service.parsePaymentHeader(paymentHeader);
       if (!payment) {
-        return res.status(400).json({ message: "Invalid payment header" });
+        return res.status(400).json({ 
+          error: {
+            code: "INVALID_PAYMENT_HEADER",
+            message: "Invalid X-Payment header format"
+          }
+        });
       }
 
-      const isValid = await X402Service.verifyPayment(payment);
-      if (!isValid) {
-        return res.status(400).json({ message: "Payment verification failed" });
+      // Enhanced verification with signature validation
+      const verificationResult = await X402Service.verifyPayment(
+        payment, 
+        requirementsHeader, 
+        signatureHeader
+      );
+      
+      if (!verificationResult.verified) {
+        return res.status(400).json({ 
+          error: {
+            code: verificationResult.error?.includes('confirmations') 
+              ? 'INSUFFICIENT_CONFIRMATIONS'
+              : verificationResult.error?.includes('signature')
+              ? 'INVALID_SIGNATURE'
+              : verificationResult.error?.includes('order')
+              ? 'ORDER_VALIDATION_FAILED'
+              : 'PAYMENT_VERIFICATION_FAILED',
+            message: verificationResult.error || 'Payment verification failed',
+            details: {
+              confirmations: verificationResult.confirmations,
+              blockchainResult: verificationResult.blockchainResult
+            }
+          }
+        });
       }
 
       // Get or create user
@@ -99,20 +127,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`Failed to send command to device ${deviceId}`);
       }
 
-      // Create payment response header
-      const paymentResponse = X402Service.createPaymentResponse(payment, result.payment.id);
+      // Generate payment state header (x402 standard)
+      const paymentStateHeader = X402Service.generatePaymentStateHeader(
+        payment.metadata?.txHash || '',
+        verificationResult.confirmations || 0,
+        process.env.NETWORK
+      );
       
-      res.set('X-PAYMENT-RESPONSE', Buffer.from(JSON.stringify(paymentResponse)).toString('base64'));
-      res.json({
-        success: true,
-        message: `${command} command executed successfully`,
-        payment: result.payment,
-        session: result.session
+      // Set x402 standard response headers
+      res.set('X-Payment-State', paymentStateHeader);
+      
+      // Success response (device command executed)
+      res.status(200).json({
+        result: command,
+        deviceId,
+        paymentId: result.payment.id,
+        txHash: payment.metadata?.txHash,
+        confirmations: verificationResult.confirmations,
+        amount: payment.amount,
+        currency: payment.currency,
+        timestamp: new Date().toISOString(),
+        expiresIn: 30 // Device control session expires in 30 seconds
       });
 
     } catch (error) {
       console.error("Device command error:", error);
-      res.status(500).json({ message: "Failed to execute device command" });
+      res.status(500).json({ 
+        error: {
+          code: "DEVICE_COMMAND_FAILED",
+          message: "Failed to execute device command",
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      });
     }
   });
 
@@ -160,6 +206,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
       connectedDevices: connectedDevices.length,
       devices: connectedDevices
     });
+  });
+
+  // Enhanced署名システム管理API
+  app.get("/api/admin/signature/info", (req, res) => {
+    try {
+      const info = X402Service.getSignatureSystemInfo();
+      res.json(info);
+    } catch (error) {
+      res.status(500).json({ 
+        error: {
+          code: "SIGNATURE_INFO_FAILED",
+          message: "Failed to get signature system info",
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      });
+    }
+  });
+
+  // システム健全性チェック
+  app.get("/api/admin/health", (req, res) => {
+    try {
+      const health = X402Service.healthCheck();
+      const isHealthy = health.signature.valid && health.blockchain.connected;
+      
+      res.status(isHealthy ? 200 : 503).json(health);
+    } catch (error) {
+      res.status(500).json({ 
+        error: {
+          code: "HEALTH_CHECK_FAILED",
+          message: "Health check failed",
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      });
+    }
+  });
+
+  // 鍵ローテーション（管理者機能 - 要認証）
+  app.post("/api/admin/signature/rotate", (req, res) => {
+    try {
+      // 簡易的な管理者認証（実際の本番では JWT など適切な認証を使用）
+      const adminKey = req.headers['x-admin-key'];
+      if (adminKey !== process.env.X402_ADMIN_KEY) {
+        return res.status(401).json({ 
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Invalid admin key"
+          }
+        });
+      }
+
+      const { keyId, secret, algorithm } = req.body;
+      if (!keyId) {
+        return res.status(400).json({ 
+          error: {
+            code: "INVALID_REQUEST",
+            message: "keyId is required"
+          }
+        });
+      }
+
+      const result = X402Service.rotateSigningKey(keyId, secret, algorithm);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: {
+            code: "KEY_ROTATION_FAILED",
+            message: result.error
+          }
+        });
+      }
+
+      res.json({
+        message: "Key rotated successfully",
+        keyId,
+        algorithm: algorithm || 'auto',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        error: {
+          code: "KEY_ROTATION_ERROR",
+          message: "Failed to rotate key",
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      });
+    }
+  });
+
+  // JWKS (JSON Web Key Set) エンドポイント
+  app.get("/.well-known/jwks.json", (_req, res) => {
+    try {
+      const jwks = X402Service.getJWKS();
+      
+      // キャッシュヘッダーを設定
+      res.set({
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600', // 1時間キャッシュ
+        'Content-Type': 'application/json'
+      });
+      
+      res.json(jwks);
+    } catch (error) {
+      res.status(500).json({ 
+        error: {
+          code: "JWKS_ERROR",
+          message: "Failed to generate JWKS",
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      });
+    }
+  });
+
+  // JWKSのミラーエンドポイント (開発用)
+  app.get("/api/admin/jwks", (req, res) => {
+    try {
+      const adminKey = req.headers['x-admin-key'];
+      if (adminKey !== process.env.X402_ADMIN_KEY) {
+        return res.status(401).json({ 
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Invalid admin key"
+          }
+        });
+      }
+
+      const jwks = X402Service.getJWKS();
+      res.json(jwks);
+    } catch (error) {
+      res.status(500).json({ 
+        error: {
+          code: "JWKS_ERROR",
+          message: "Failed to generate JWKS",
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      });
+    }
   });
 
   return httpServer;
