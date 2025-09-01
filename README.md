@@ -311,6 +311,30 @@ VITE_WS_URL=ws://localhost:5001
 - Check payment history in the transaction panel
 - Monitor device status and responses
 
+## 🔄 x402 Implementation Status
+
+### Current Implementation vs Production-Ready Specification
+
+The current xCockpit implementation provides a **foundational x402 protocol** suitable for development and testing. For production deployment, significant enhancements are required to meet enterprise security standards.
+
+| Feature | Current Status | Production Target | Priority |
+|---------|----------------|------------------|----------|
+| **Network** | Base Sepolia (testnet) | Base Mainnet | 🟢 Easy Migration |
+| **Payment Verification** | Field validation only | Full blockchain verification | 🔴 Critical |
+| **Security** | Basic flow | HMAC signatures, nonce management | 🔴 Critical |
+| **Confirmations** | Not implemented | 0-3 configurable confirmations | 🟡 Medium |
+| **Anti-replay** | None | order_id/nonce system | 🟡 Medium |
+
+**📋 Key Differences Analysis**: See [`docs/x402_specification_comparison.md`](docs/x402_specification_comparison.md) for detailed technical comparison and migration roadmap.
+
+### Next Steps for Production
+1. **Blockchain Verification**: Implement ethers.js for on-chain USDC transfer validation
+2. **Security Hardening**: Add HMAC-SHA256 signatures and replay protection  
+3. **Confirmation Control**: Support immediate (L2 included) vs secure (2-3 confirmations) modes
+4. **Mainnet Migration**: Switch from Base Sepolia to Base Mainnet USDC
+
+**Estimated Timeline**: 2-4 weeks for full production-ready implementation
+
 ## Development
 
 ### Key Components
