@@ -343,5 +343,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Farcaster Frame API for Mini App integration
+  app.post("/api/frame", async (req, res) => {
+    try {
+      // Handle Farcaster Frame interactions
+      const { untrustedData, trustedData } = req.body;
+      
+      console.log('Frame interaction received:', { untrustedData, trustedData });
+      
+      // Return frame response to launch the Mini App
+      res.json({
+        type: "frame",
+        version: "vNext",
+        image: "/frame-image.png",
+        buttons: [
+          {
+            text: "🚀 Launch xCockpit",
+            action: "link",
+            target: process.env.NODE_ENV === 'production' 
+              ? "https://xcockpit.replit.app" 
+              : "http://localhost:5000"
+          }
+        ],
+        postUrl: "/api/frame"
+      });
+    } catch (error) {
+      console.error('Frame API error:', error);
+      res.status(500).json({ error: "Frame processing failed" });
+    }
+  });
+
+  // Mini App manifest endpoint
+  app.get("/.well-known/farcaster.json", async (req, res) => {
+    const manifest = {
+      name: "xCockpit",
+      description: "Web3 IoT Control Dashboard",
+      icon: "🚀",
+      version: "1.0.0",
+      url: process.env.NODE_ENV === 'production' 
+        ? "https://xcockpit.replit.app" 
+        : "http://localhost:5000",
+      frame: {
+        version: "vNext",
+        image: "/frame-image.png",
+        buttons: [
+          {
+            text: "🚀 Launch xCockpit",
+            action: "link"
+          }
+        ]
+      }
+    };
+    
+    res.json(manifest);
+  });
+
   return httpServer;
 }

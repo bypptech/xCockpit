@@ -6,9 +6,12 @@ import DeviceCard from '@/components/device-card';
 import PaymentModal from '@/components/payment-modal';
 import TransactionHistory from '@/components/transaction-history';
 import SystemStatus from '@/components/system-status';
+import SocialFeatures from '@/components/social-features';
 import { useWebSocket } from '@/lib/websocket';
 import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
+import { useMiniApp } from '@/providers/MiniAppProvider';
+import { useViralSharing } from '@/hooks/use-viral-sharing';
 import { type Device } from '@shared/schema';
 
 export default function Dashboard() {
@@ -20,8 +23,11 @@ export default function Dashboard() {
     amount: string;
     recipient: string;
   } | null>(null);
+  const [hasSharedFirstUse, setHasSharedFirstUse] = useState(false);
   
   const { isConnected: wsConnected, lastMessage } = useWebSocket();
+  const { user, isFrameReady, setFrameReady, isMiniApp } = useMiniApp();
+  const { triggerAutoShare, shareDeviceInteraction } = useViralSharing();
 
   // Fetch devices
   const { data: devices = [], isLoading } = useQuery({
@@ -54,6 +60,11 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    // Initialize Mini App frame
+    if (isMiniApp && !isFrameReady) {
+      setFrameReady();
+    }
+
     // Check if wallet is already connected
     const currentAccount = walletService.getCurrentAccount();
     if (currentAccount) {
@@ -64,7 +75,15 @@ export default function Dashboard() {
     walletService.onAccountsChanged((accounts: string[]) => {
       setWalletAddress(accounts.length > 0 ? accounts[0] : null);
     });
-  }, []);
+  }, [isMiniApp, isFrameReady, setFrameReady]);
+
+  // Share first use when wallet connects for the first time
+  useEffect(() => {
+    if (walletAddress && !hasSharedFirstUse && isMiniApp) {
+      triggerAutoShare({ type: 'first_use' });
+      setHasSharedFirstUse(true);
+    }
+  }, [walletAddress, hasSharedFirstUse, isMiniApp, triggerAutoShare]);
 
   const handleWalletConnect = async () => {
     try {
@@ -104,6 +123,15 @@ export default function Dashboard() {
         console.log('✅ Command executed successfully:', result.payment);
         setPaymentState('idle');
         alert(`${command} executed successfully!`);
+        
+        // Auto-share device interaction success
+        if (isMiniApp) {
+          triggerAutoShare({
+            type: 'device_interaction',
+            deviceName: device.name,
+            context: command
+          });
+        }
         return;
       }
 
@@ -192,6 +220,20 @@ export default function Dashboard() {
             {/* Balance Card - Always visible at the top */}
             <BalanceCard walletAddress={walletAddress} />
             
+            {/* Mini App welcome message */}
+            {isMiniApp && (
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🚀</span>
+                  <div>
+                    <h3 className="font-semibold text-primary">Welcome to xCockpit Mini App!</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {user ? `Hi ${user.displayName}! ` : ''}Control IoT devices with crypto payments
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Device Cards */}
             {(devices as Device[]).map((device: Device) => (
@@ -206,8 +248,18 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Right Column: History & Status */}
+          {/* Right Column: Social, History & Status */}
           <div className="space-y-6">
+            {/* Social Features - only show when wallet connected or in Mini App */}
+            {(walletAddress || isMiniApp) && (
+              <SocialFeatures
+                walletAddress={walletAddress}
+                totalPayments={paymentHistory.length}
+                totalAmount={paymentHistory.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0).toFixed(2)}
+                deviceInteractions={paymentHistory.length}
+              />
+            )}
+            
             <TransactionHistory 
               transactions={paymentHistory}
               data-testid="transaction-history"

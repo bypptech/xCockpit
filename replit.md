@@ -16,6 +16,8 @@ Preferred communication style: Simple, everyday language.
 - **State Management**: TanStack React Query for server state with custom hooks for local state
 - **Web3 Integration**: Coinbase Wallet SDK for wallet connection and USDC payments
 - **Real-time Communication**: WebSocket hooks for live device status updates
+- **Mini Apps Support**: Farcaster Frame integration with MiniAppProvider for social context
+- **Social Features**: Viral sharing, achievements, leaderboards, and social proof mechanisms
 
 ## Backend Architecture
 - **Runtime**: Node.js with Express.js and TypeScript

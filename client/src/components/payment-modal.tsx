@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
 import { balanceEvents } from '@/lib/balance-events';
+import { useMiniApp } from '@/providers/MiniAppProvider';
+import { useViralSharing } from '@/hooks/use-viral-sharing';
 import { type Device } from '@shared/schema';
 
 interface PaymentModalProps {
@@ -22,6 +24,8 @@ export default function PaymentModal({ device, command, amount, recipient, walle
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isMiniApp } = useMiniApp();
+  const { triggerAutoShare } = useViralSharing();
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
@@ -71,6 +75,16 @@ export default function PaymentModal({ device, command, amount, recipient, walle
           description: `${command} executed on ${device.name}`,
           variant: "default",
         });
+
+        // Auto-share payment success in Mini App
+        if (isMiniApp) {
+          triggerAutoShare({
+            type: 'payment_success',
+            amount: `${amount} USDC`,
+            deviceName: device.name,
+            context: command
+          });
+        }
 
         // Auto-close after success
         setTimeout(() => {
