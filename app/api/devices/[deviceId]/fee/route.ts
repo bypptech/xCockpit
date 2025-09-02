@@ -80,8 +80,31 @@ export async function POST(
     // In production, you would verify wallet ownership/permissions here
     console.log(`Fee update request from wallet: ${walletAddress}`);
 
-    // Update the fee
+    // Update the fee in memory
     deviceFees[deviceId] = fee;
+
+    // Save to file
+    try {
+      let persistedFees = {};
+      try {
+        const fileContent = readFileSync(FEES_FILE_PATH, 'utf8');
+        persistedFees = JSON.parse(fileContent);
+      } catch (error) {
+        // File doesn't exist, start with empty object
+      }
+
+      persistedFees[deviceId] = {
+        price: fee.toString(),
+        customFee: true,
+        updatedBy: walletAddress,
+        updatedAt: new Date().toISOString()
+      };
+
+      writeFileSync(FEES_FILE_PATH, JSON.stringify(persistedFees, null, 2));
+      console.log(`💾 Saved fee ${fee} USDC for ${deviceId} to file`);
+    } catch (fileError) {
+      console.error('Failed to save fee to file:', fileError);
+    }
 
     return NextResponse.json({
       success: true,

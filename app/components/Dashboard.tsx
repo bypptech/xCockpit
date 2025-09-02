@@ -163,18 +163,27 @@ function DashboardContent() {
       const deviceIds = ['ESP32_001', 'ESP32_002'];
       
       for (const deviceId of deviceIds) {
-        console.log(`Loading fee for ${deviceId}...`);
-        const response = await fetch(`/api/devices/${deviceId}/fee`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Fee data for ${deviceId}:`, data);
-          setGachaFees(prev => ({
-            ...prev,
-            [deviceId]: data.currentFee
-          }));
-        } else {
-          console.warn(`Failed to load fee for ${deviceId}, using default`);
-          // Set default fee if API call fails
+        console.log(`🔄 Loading fee for ${deviceId}...`);
+        try {
+          const response = await fetch(`/api/devices/${deviceId}/fee`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Fee data for ${deviceId}:`, data);
+            setGachaFees(prev => ({
+              ...prev,
+              [deviceId]: data.currentFee
+            }));
+          } else {
+            const errorData = await response.json();
+            console.warn(`❌ Failed to load fee for ${deviceId}:`, errorData);
+            // Set default fee if API call fails
+            setGachaFees(prev => ({
+              ...prev,
+              [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.005
+            }));
+          }
+        } catch (fetchError) {
+          console.error(`💥 Network error loading fee for ${deviceId}:`, fetchError);
           setGachaFees(prev => ({
             ...prev,
             [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.005
@@ -182,7 +191,7 @@ function DashboardContent() {
         }
       }
     } catch (error) {
-      console.error('Failed to load gacha fees:', error);
+      console.error('💥 Failed to load gacha fees:', error);
       // Set default fees on error
       setGachaFees({
         'ESP32_001': 0.5,
