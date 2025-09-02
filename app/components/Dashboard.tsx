@@ -28,9 +28,7 @@ function DashboardContent() {
   console.log('🚀 DASHBOARD COMPONENT RENDERING');
   
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [gachaFees, setGachaFees] = useState<{ [deviceId: string]: number }>({
-    'ESP32_001': 0.01
-  });
+  const [gachaFees, setGachaFees] = useState<{ [deviceId: string]: number }>({});
   const [isPlayingGacha, setIsPlayingGacha] = useState<{ [deviceId: string]: boolean }>({});
   
   // Basename hook for displaying .base.eth names
@@ -73,9 +71,7 @@ function DashboardContent() {
         }
 
         // Load initial fee data for Smart Gacha devices
-        if (address) {
-          loadGachaFees();
-        }
+        loadGachaFees();
       } catch (error) {
         console.log('No wallet connected');
       }
@@ -83,6 +79,12 @@ function DashboardContent() {
 
     console.log('📞 CALLING loadWalletAddress function');
     loadWalletAddress();
+  }, []);
+
+  // Load gacha fees on component mount
+  useEffect(() => {
+    console.log('🔄 LOADING initial gacha fees');
+    loadGachaFees();
   }, []);
 
   // Mock devices data for now - will be replaced with API call
@@ -360,14 +362,23 @@ function DashboardContent() {
                 🎮 Smart Gacha Customization
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GachaFeeCustomizer
-                  deviceId="ESP32_001"
-                  deviceName="Smart Gacha #001"
-                  currentFee={gachaFees['ESP32_001'] || 0.01}
-                  onFeeChange={(newFee) => handleFeeChange('ESP32_001', newFee)}
-                  onPlayGacha={(fee) => handlePlayGacha('ESP32_001', fee)}
-                  isPlaying={isPlayingGacha['ESP32_001'] || false}
-                />
+                {gachaFees['ESP32_001'] !== undefined ? (
+                  <GachaFeeCustomizer
+                    deviceId="ESP32_001"
+                    deviceName="Smart Gacha #001"
+                    currentFee={gachaFees['ESP32_001']}
+                    onFeeChange={(newFee) => handleFeeChange('ESP32_001', newFee)}
+                    onPlayGacha={(fee) => handlePlayGacha('ESP32_001', fee)}
+                    isPlaying={isPlayingGacha['ESP32_001'] || false}
+                  />
+                ) : (
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-gray-600 dark:text-gray-400">Loading fee settings...</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,5 +1,7 @@
 import { type User, type InsertUser, type Device, type InsertDevice, type Payment, type InsertPayment, type Session, type InsertSession } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { join } from "path";
 
 export interface IStorage {
   // Users
@@ -31,6 +33,7 @@ export class MemStorage implements IStorage {
   private devices: Map<string, Device>;
   private payments: Map<string, Payment>;
   private sessions: Map<string, Session>;
+  private readonly persistenceFile = join(process.cwd(), 'device-fees.json');
 
   constructor() {
     this.users = new Map();
@@ -40,33 +43,72 @@ export class MemStorage implements IStorage {
 
     // Initialize with sample devices
     this.initializeDevices();
+    // Load persisted fee data
+    this.loadPersistedFees();
   }
 
   private initializeDevices() {
-    const sampleDevices: Device[] = [
-      {
-        id: "ESP32_001",
-        name: "Smart Gacha #001",
-        type: "gacha",
-        location: "MIDORI.so SHIBUYA / CryptoBase",
-        status: "ready",
-        isOnline: true,
-        lastActivity: new Date(),
-        metadata: { price: "0.01" }
-      },
-      {
-        id: "ESP32_002", 
-        name: "Smart Gacha #002",
-        type: "gacha",
-        location: "MIDORI.so SHIBUYA / CryptoBase",
-        status: "ready",
-        isOnline: true,
-        lastActivity: new Date(),
-        metadata: { price: "0.005" }
-      }
-    ];
+    // Only initialize devices if they don't exist yet (preserve existing data)
+    if (!this.devices.has("ESP32_001")) {
+      const sampleDevices: Device[] = [
+        {
+          id: "ESP32_001",
+          name: "Smart Gacha #001",
+          type: "gacha",
+          location: "MIDORI.so SHIBUYA / CryptoBase",
+          status: "ready",
+          isOnline: true,
+          lastActivity: new Date(),
+          metadata: { price: "0.01" }
+        },
+        {
+          id: "ESP32_002", 
+          name: "Smart Gacha #002",
+          type: "gacha",
+          location: "MIDORI.so SHIBUYA / CryptoBase",
+          status: "ready",
+          isOnline: true,
+          lastActivity: new Date(),
+          metadata: { price: "0.005" }
+        }
+      ];
 
-    sampleDevices.forEach(device => this.devices.set(device.id, device));
+      sampleDevices.forEach(device => this.devices.set(device.id, device));
+    }
+  }
+
+  private loadPersistedFees() {
+    try {
+      if (existsSync(this.persistenceFile)) {
+        const data = JSON.parse(readFileSync(this.persistenceFile, 'utf-8'));
+        console.log('📁 Loading persisted fees:', data);
+        
+        for (const [deviceId, feeData] of Object.entries(data)) {
+          const device = this.devices.get(deviceId);
+          if (device && feeData && typeof feeData === 'object') {
+            device.metadata = { ...device.metadata, ...(feeData as any) };
+            this.devices.set(deviceId, device);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load persisted fees:', error);
+    }
+  }
+
+  private persistFees() {
+    try {
+      const feeData: Record<string, any> = {};
+      for (const [deviceId, device] of this.devices.entries()) {
+        if (device.metadata?.customFee) {
+          feeData[deviceId] = device.metadata;
+        }
+      }
+      writeFileSync(this.persistenceFile, JSON.stringify(feeData, null, 2));
+      console.log('💾 Persisted fees:', feeData);
+    } catch (error) {
+      console.warn('Failed to persist fees:', error);
+    }
   }
 
   // Users
@@ -134,6 +176,12 @@ export class MemStorage implements IStorage {
     };
     
     this.devices.set(id, updated);
+    
+    // Persist fees if this is a fee update
+    if (updated.metadata?.customFee) {
+      this.persistFees();
+    }
+    
     return updated;
   }
 
