@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { type Device, type Session } from '@shared/schema';
+import React, { useState, useEffect } from 'react';
 
 interface DeviceCardProps {
   device: Device;
@@ -11,6 +12,7 @@ interface DeviceCardProps {
 export default function DeviceCard({ device, onCommand, isWalletConnected, userSessions }: DeviceCardProps) {
   const activeSession = userSessions.find(s => s.deviceId === device.id);
   const hasAccess = !!activeSession;
+  const [customFee, setCustomFee] = useState<string>('0.01'); // Default fee
 
   const getDeviceIcon = () => {
     switch (device.type) {
@@ -71,7 +73,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
 
   const getStatusDisplay = () => {
     if (!device.isOnline) return { text: 'Offline', color: 'bg-red-500' };
-    
+
     switch (device.type) {
       case 'gacha':
         switch (device.status) {
@@ -87,19 +89,44 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             return { text: device.status, color: 'bg-gray-500' };
         }
       case 'lock':
-        return { 
-          text: device.status === 'locked' ? 'Locked' : 'Unlocked', 
-          color: device.status === 'locked' ? 'bg-red-500' : 'bg-green-500' 
+        return {
+          text: device.status === 'locked' ? 'Locked' : 'Unlocked',
+          color: device.status === 'locked' ? 'bg-red-500' : 'bg-green-500'
         };
       case 'light':
-        return { 
-          text: device.status === 'off' ? 'Off' : 'On', 
-          color: device.status === 'off' ? 'bg-gray-500' : 'bg-yellow-500' 
+        return {
+          text: device.status === 'off' ? 'Off' : 'On',
+          color: device.status === 'off' ? 'bg-gray-500' : 'bg-yellow-500'
         };
       default:
         return { text: device.status, color: 'bg-gray-500' };
     }
   };
+
+  // Load saved fee from API
+  useEffect(() => {
+    if (device.type === 'gacha') {
+      console.log(`🔄 Loading fee for ${device.id}...`);
+      fetch(`/api/devices/${device.id}/fee`)
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error(`HTTP ${res.status}`);
+        })
+        .then(data => {
+          console.log(`✅ Loaded fee for ${device.id}:`, data.currentFee);
+          if (data.currentFee !== undefined) {
+            setCustomFee(data.currentFee.toString());
+          }
+        })
+        .catch(err => {
+          console.error(`❌ Failed to load fee for ${device.id}:`, err);
+          // Set default fee for this device
+          setCustomFee(device.id === 'ESP32_001' ? '0.500' : '0.005');
+        });
+    }
+  }, [device.id, device.type]);
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -117,7 +144,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             </p>
           </div>
         </div>
-        
+
         {/* Device Status */}
         <div className="flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${getStatusDisplay().color}`}></div>
@@ -145,7 +172,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
 
       {/* Control Buttons */}
       <div className="flex space-x-3">
-        <Button 
+        <Button
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => onCommand(device, getDeviceCommand())}
           disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready')}
@@ -154,10 +181,10 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           <i className={`${getDeviceIcon()} mr-2`}></i>
           {getCommandLabel()}
           <span className="ml-2 text-sm opacity-90">
-            ${parseFloat((device.metadata as { price?: string } | null)?.price || '0.01').toFixed(3)} USDC
+            ${parseFloat(customFee).toFixed(3)} USDC
           </span>
         </Button>
-        <Button 
+        <Button
           variant="secondary"
           className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
           data-testid={`button-device-history-${device.id}`}
@@ -179,8 +206,8 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             </span>
           </div>
           <div className="mt-2 w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
-            <div 
-              className="bg-green-600 h-2 rounded-full transition-all duration-1000" 
+            <div
+              className="bg-green-600 h-2 rounded-full transition-all duration-1000"
               style={{ width: `${getSessionProgress()}%` }}
               data-testid={`progress-session-${device.id}`}
             ></div>
