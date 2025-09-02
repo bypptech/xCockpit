@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { walletService } from '@/lib/coinbase-wallet';
 import { balanceEvents } from '@/lib/balance-events';
 import { RefreshCw, Wallet, TrendingUp, TrendingDown, Network } from 'lucide-react';
+import { BasenameDisplay } from '@/components/basename-display';
+import { useBasename } from '@/hooks/use-basenames';
 
 interface BalanceCardProps {
   walletAddress: string | null;
@@ -22,6 +24,11 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
     isSmartWallet: boolean;
     walletType: string;
   } | null>(null);
+
+  // Basename hook for displaying .base.eth names
+  const { basename, loading: basenameLoading } = useBasename(walletAddress);
+
+  console.log('🎯 BalanceCard - Basename Hook Result:', { basename, basenameLoading, walletAddress });
 
   useEffect(() => {
     if (walletAddress) {
@@ -191,7 +198,11 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
         </CardTitle>
         <CardDescription className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span>{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
+            <BasenameDisplay 
+              address={walletAddress}
+              variant="inline"
+              className="text-sm font-medium"
+            />
             {walletInfo?.walletType && (
               <span className="text-xs text-muted-foreground">
                 ({walletInfo.walletType})
@@ -326,10 +337,20 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               </div>
               <div className="flex items-center justify-between">
                 <span>Address:</span>
-                <span className="font-mono text-[10px]">
-                  {walletAddress.slice(0, 10)}...
-                </span>
+                <BasenameDisplay 
+                  address={walletAddress}
+                  variant="inline"
+                  className="font-mono text-[10px]"
+                />
               </div>
+              {basename && (
+                <div className="flex items-center justify-between">
+                  <span>Basename:</span>
+                  <span className="text-blue-500 font-medium text-[10px]">
+                    {basename}
+                  </span>
+                </div>
+              )}
               {walletInfo?.isSmartWallet && (
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded text-[10px] text-purple-700 dark:text-purple-300">
                   ✨ Smart Wallet detected - Enhanced security features available

@@ -22,10 +22,19 @@ interface Device {
 }
 
 function DashboardContent() {
+  console.log('🚀 DASHBOARD COMPONENT RENDERING');
+  
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  
+  // ウォレットアドレスが変わるたびにログ出力
+  useEffect(() => {
+    console.log('🎯 DASHBOARD WALLET ADDRESS CHANGED:', walletAddress);
+  }, [walletAddress]);
 
   // Load wallet address on component mount
   useEffect(() => {
+    console.log('🔄 DASHBOARD useEffect TRIGGERED - Loading wallet address');
+    
     const loadWalletAddress = async () => {
       try {
         const address = walletService.getCurrentAccount();
@@ -33,17 +42,18 @@ function DashboardContent() {
         setWalletAddress(address);
         
         // 開発環境でBasenamesテスト用にテストアドレスを設定
+        // ウォレットが接続されていない場合、あなたの実際のアドレスでテスト
         if (!address && process.env.NODE_ENV === 'development') {
-          console.log('🧪 Setting test address for Basenames development');
-          // 開発環境でのBasename表示テスト用のアドレス
-          // 実際の動作を確認するため
-          setWalletAddress('0x1234567890123456789012345678901234567890'); // Test address with mock basename
+          console.log('🧪 Testing with user wallet address for Basename verification');
+          // ユーザーの実際のウォレットアドレスでテスト
+          setWalletAddress('0xe5e28ce1f8eeae58bf61d1e22fcf9954327bfd1b');
         }
       } catch (error) {
         console.log('No wallet connected');
       }
     };
 
+    console.log('📞 CALLING loadWalletAddress function');
     loadWalletAddress();
   }, []);
 
@@ -76,11 +86,14 @@ function DashboardContent() {
   ];
 
   const handleWalletConnect = async () => {
+    console.log('🔗 Attempting to connect wallet...');
     try {
       const accounts = await walletService.connect();
+      console.log('✅ Wallet connected, accounts:', accounts);
       setWalletAddress(accounts[0] || null);
+      console.log('💰 Set wallet address to:', accounts[0] || null);
     } catch (error) {
-      console.error('Failed to connect wallet:', error);
+      console.error('❌ Failed to connect wallet:', error);
     }
   };
 
@@ -112,6 +125,25 @@ function DashboardContent() {
           <p className="text-lg text-gray-600 dark:text-gray-300">
             Web3-Powered IoT Control Dashboard
           </p>
+          
+          {/* Wallet Address / Basename Display */}
+          {walletAddress && (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-6 py-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Connected Wallet</div>
+                <SimpleBasenameDisplay 
+                  address={walletAddress}
+                  className="text-base font-medium"
+                />
+              </div>
+              
+              {/* Debug Info for testing */}
+              <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded">
+                Address: {walletAddress}
+              </div>
+            </div>
+          )}
+          
           <div className="mt-4 flex justify-center">
             <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-4 py-2 rounded-full text-sm font-medium">
               🚀 Mini App Enabled
@@ -147,6 +179,27 @@ function DashboardContent() {
 
           {/* Right Column - Devices */}
           <div className="lg:col-span-2">
+            {/* Wallet Info Bar */}
+            {walletAddress && (
+              <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Active Wallet</div>
+                      <SimpleBasenameDisplay 
+                        address={walletAddress}
+                        className="text-lg font-semibold"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Base Sepolia Connected
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Available Devices
@@ -224,6 +277,7 @@ function DashboardContent() {
 }
 
 export default function Dashboard() {
+  console.log('📊 DASHBOARD WRAPPER COMPONENT RENDERING');
   return (
     <Providers>
       <MiniAppProvider>

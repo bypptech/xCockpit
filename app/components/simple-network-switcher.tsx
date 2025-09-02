@@ -108,9 +108,15 @@ export function SimpleNetworkSwitcher({ walletAddress, className = '' }: Network
 
         {/* Status Message */}
         {isBaseNetwork() ? (
-          <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-            ✅ Basenames are supported on this network!
-          </div>
+          networkInfo?.chainId.toLowerCase() === '0x2105' ? (
+            <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+              ✅ Basenames are fully supported on Base Mainnet!
+            </div>
+          ) : (
+            <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+              ℹ️ Connected to Base Sepolia. Basenames will be looked up via Base Mainnet.
+            </div>
+          )
         ) : (
           <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
             ⚠️ Switch to Base network to view Basenames
@@ -151,6 +157,12 @@ export function SimpleNetworkSwitcher({ walletAddress, className = '' }: Network
         <div className="text-xs text-gray-400 border-t pt-2">
           {isEthereumMainnet() && (
             <div>💡 You're on Ethereum Mainnet. Basenames work on Base networks.</div>
+          )}
+          {isBaseNetwork() && networkInfo?.chainId.toLowerCase() === '0x2105' && (
+            <div>✨ Base Mainnet has native Basename support.</div>
+          )}
+          {isBaseNetwork() && networkInfo?.chainId.toLowerCase() === '0x14a34' && (
+            <div>🔄 Base Sepolia uses Base Mainnet for Basename lookups.</div>
           )}
         </div>
       </CardContent>
