@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { walletService } from '@/lib/coinbase-wallet';
 import { balanceEvents } from '@/lib/balance-events';
 import { RefreshCw, Wallet, TrendingUp, TrendingDown, Network } from 'lucide-react';
-import { BasenameDisplay } from '@/components/basename-display';
-import { BasenameSetup } from '@/components/basename-setup';
-import { useBasename } from '@/hooks/use-basenames';
+// Temporarily commented out to debug React Hook error
+// import { BasenameDisplay } from '@/components/basename-display';
+// import { BasenameSetup } from '@/components/basename-setup';
+// import { useBasename } from '@/hooks/use-basenames';
 
 interface BalanceCardProps {
   walletAddress: string | null;
@@ -27,12 +28,18 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
   } | null>(null);
 
   // Basename hook for displaying .base.eth names
-  const { 
-    basename, 
-    ownedBasename, 
-    hasReverseRecord, 
-    loading: basenameLoading 
-  } = useBasename(walletAddress);
+  // Temporarily commented out to debug React Hook error
+  const basename = null;
+  const ownedBasename = null;
+  const hasReverseRecord = false;
+  const basenameLoading = false;
+  
+  // const { 
+  //   basename, 
+  //   ownedBasename, 
+  //   hasReverseRecord, 
+  //   loading: basenameLoading 
+  // } = useBasename(walletAddress);
 
   console.log('🎯 BalanceCard - Basename Hook Result:', { 
     basename, 
@@ -210,11 +217,9 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
         </CardTitle>
         <CardDescription className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BasenameDisplay 
-              address={walletAddress}
-              variant="inline"
-              className="text-sm font-medium"
-            />
+            <span className="text-sm font-medium font-mono">
+              {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'No wallet'}
+            </span>
             {walletInfo?.walletType && (
               <span className="text-xs text-muted-foreground">
                 ({walletInfo.walletType})
@@ -349,11 +354,9 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               </div>
               <div className="flex items-center justify-between">
                 <span>Address:</span>
-                <BasenameDisplay 
-                  address={walletAddress}
-                  variant="inline"
-                  className="font-mono text-[10px]"
-                />
+                <span className="font-mono text-[10px]">
+                  {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'No wallet'}
+                </span>
               </div>
               {basename && (
                 <div className="flex items-center justify-between">
@@ -429,7 +432,8 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               </div>
             </div>
             
-            {/* Basename Setup UI */}
+            {/* Basename Setup UI - Temporarily commented out to debug React Hook error */}
+            {/* 
             {walletAddress && (
               <BasenameSetup
                 address={walletAddress}
@@ -445,6 +449,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
                 className="mt-4"
               />
             )}
+            */}
           </div>
         </div>
       </CardContent>
