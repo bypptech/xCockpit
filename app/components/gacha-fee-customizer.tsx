@@ -16,6 +16,7 @@ interface GachaFeeCustomizerProps {
   onPlayGacha: (fee: number) => void;
   isPlaying?: boolean;
   className?: string;
+  walletAddress?: string | null;
 }
 
 // Fee validation constants
@@ -30,7 +31,8 @@ export function GachaFeeCustomizer({
   onFeeChange,
   onPlayGacha,
   isPlaying = false,
-  className = ''
+  className = '',
+  walletAddress
 }: GachaFeeCustomizerProps) {
   const [customFee, setCustomFee] = useState(currentFee);
   const [inputValue, setInputValue] = useState(currentFee.toString());
@@ -219,11 +221,16 @@ export function GachaFeeCustomizer({
       <CardFooter className="flex gap-2">
         <Button
           onClick={handlePlayGacha}
-          disabled={!isValid || isPlaying}
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
+          disabled={!isValid || isPlaying || !walletAddress}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
           size="lg"
         >
-          {isPlaying ? (
+          {!walletAddress ? (
+            <>
+              <Coins className="w-4 h-4 mr-2" />
+              Connect Wallet to Play
+            </>
+          ) : isPlaying ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Playing...

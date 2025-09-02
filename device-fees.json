@@ -1,8 +1,8 @@
 {
   "ESP32_001": {
-    "price": "0.500",
+    "price": "0.250",
     "customFee": true,
-    "updatedBy": "0x123",
-    "updatedAt": "2025-09-02T06:55:27.183Z"
+    "updatedBy": "0xtest",
+    "updatedAt": "2025-09-02T07:09:05.772Z"
   }
 }
