@@ -5,6 +5,7 @@ import { walletService } from '@/lib/coinbase-wallet';
 import { balanceEvents } from '@/lib/balance-events';
 import { RefreshCw, Wallet, TrendingUp, TrendingDown, Network } from 'lucide-react';
 import { BasenameDisplay } from '@/components/basename-display';
+import { BasenameSetup } from '@/components/basename-setup';
 import { useBasename } from '@/hooks/use-basenames';
 
 interface BalanceCardProps {
@@ -26,9 +27,20 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
   } | null>(null);
 
   // Basename hook for displaying .base.eth names
-  const { basename, loading: basenameLoading } = useBasename(walletAddress);
+  const { 
+    basename, 
+    ownedBasename, 
+    hasReverseRecord, 
+    loading: basenameLoading 
+  } = useBasename(walletAddress);
 
-  console.log('🎯 BalanceCard - Basename Hook Result:', { basename, basenameLoading, walletAddress });
+  console.log('🎯 BalanceCard - Basename Hook Result:', { 
+    basename, 
+    ownedBasename, 
+    hasReverseRecord, 
+    basenameLoading, 
+    walletAddress 
+  });
 
   useEffect(() => {
     if (walletAddress) {
@@ -416,6 +428,23 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
                 </div>
               </div>
             </div>
+            
+            {/* Basename Setup UI */}
+            {walletAddress && (
+              <BasenameSetup
+                address={walletAddress}
+                ownedBasename={ownedBasename}
+                hasReverseRecord={hasReverseRecord}
+                onBasenameSet={(basename) => {
+                  console.log('🎉 Basename set as primary:', basename);
+                  // Refresh the basename hook to get updated data
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 2000);
+                }}
+                className="mt-4"
+              />
+            )}
           </div>
         </div>
       </CardContent>

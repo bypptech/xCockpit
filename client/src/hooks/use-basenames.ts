@@ -4,6 +4,8 @@ import { walletService } from '@/lib/coinbase-wallet';
 
 interface BasenameResult {
   basename: string | null;
+  ownedBasename: string | null;
+  hasReverseRecord: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -17,6 +19,8 @@ interface AddressResult {
 // アドレスからBasenameを取得するフック
 export function useBasename(address: string | null): BasenameResult {
   const [basename, setBasename] = useState<string | null>(null);
+  const [ownedBasename, setOwnedBasename] = useState<string | null>(null);
+  const [hasReverseRecord, setHasReverseRecord] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +30,8 @@ export function useBasename(address: string | null): BasenameResult {
     if (!address) {
       console.log('❌ useBasename: No address provided');
       setBasename(null);
+      setOwnedBasename(null);
+      setHasReverseRecord(false);
       setLoading(false);
       setError(null);
       return;
@@ -37,86 +43,120 @@ export function useBasename(address: string | null): BasenameResult {
       setError(null);
 
       try {
-        // 現在接続されているネットワークを動的に取得
-        let rpcUrl = 'https://sepolia.base.org'; // デフォルト (Base Sepolia)
-        let networkName = 'Base Sepolia';
+        // Base Mainnetを直接使用してL2Resolverでの逆引きを実行
+        const rpcUrl = 'https://mainnet.base.org';
+        const networkName = 'Base Mainnet';
         
-        try {
-          const networkInfo = await walletService.getCurrentNetwork();
-          console.log('🌐 Current network:', networkInfo);
-          
-          // Chain IDに基づいてRPC URLを選択
-          switch (networkInfo.chainId.toLowerCase()) {
-            case '0x2105': // Base Mainnet (8453)
-              rpcUrl = 'https://mainnet.base.org';
-              networkName = 'Base Mainnet';
-              break;
-            case '0x14a34': // Base Sepolia (84532)  
-              rpcUrl = 'https://sepolia.base.org';
-              networkName = 'Base Sepolia';
-              break;
-            case '0x1': // Ethereum Mainnet (1) - Base SepoliaとMainnetの両方を試す
-              // Ethereum Mainnetの場合、Base SepoliaとMainnetの両方でBasename lookupを試行
-              rpcUrl = 'https://sepolia.base.org';
-              networkName = 'Base Sepolia (via Ethereum)';
-              break;
-            default:
-              // その他のネットワークでもBase Sepoliaを優先して試す（開発環境用）
-              rpcUrl = 'https://sepolia.base.org';
-              networkName = 'Base Sepolia (fallback)';
-              break;
-          }
-        } catch (networkError) {
-          console.warn('Failed to get network info, using Base Sepolia:', networkError);
-          rpcUrl = 'https://sepolia.base.org';
-          networkName = 'Base Sepolia (error fallback)';
-        }
+        console.log('🔍 Using Base Mainnet L2Resolver for Basename lookup:', { rpcUrl, networkName });
 
-        console.log('🔍 Using RPC for Basename lookup:', { rpcUrl, networkName });
-
-        // ethers.jsでリバースルックアップ実行
-        let provider = new ethers.JsonRpcProvider(rpcUrl);
+        // Base MainnetのL2Resolverを使用
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const BASE_L2_RESOLVER = '0xC6d566A56A1aFf6508b41f6c90ff131615583BCD';
+        const BASE_ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+        
+        // L2Resolver ABI
+        const l2ResolverABI = [
+          "function name(bytes32 node) view returns (string memory)"
+        ];
+        
+        // Registry ABI
+        const registryABI = [
+          "function resolver(bytes32 node) view returns (address)",
+          "function recordExists(bytes32 node) view returns (bool)"
+        ];
+        
         let result = null;
         
         try {
-          result = await provider.lookupAddress(address);
-        } catch (error: any) {
-          // Base SepoliaはENSをサポートしていない場合、Base Mainnetにフォールバック
-          if (error.code === 'UNSUPPORTED_OPERATION' && networkName.includes('Sepolia')) {
-            console.log('🔄 Base Sepolia does not support ENS, trying Base Mainnet...');
-            provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-            try {
-              result = await provider.lookupAddress(address);
-              networkName = 'Base Mainnet (fallback from Sepolia)';
-            } catch (fallbackError) {
-              console.warn('Failed to lookup on Base Mainnet as well:', fallbackError);
-              throw error; // 元のエラーを再投げ
+          // 1. 逆引きノードを生成
+          const reverseNode = ethers.namehash(`${address.toLowerCase().substring(2)}.addr.reverse`);
+          console.log('🔍 Reverse node:', reverseNode);
+          
+          // 2. Registryでリゾルバーアドレスをチェック
+          const registry = new ethers.Contract(BASE_ENS_REGISTRY, registryABI, provider);
+          
+          try {
+            const recordExists = await registry.recordExists(reverseNode);
+            console.log('🔍 Reverse record exists:', recordExists);
+            
+            if (recordExists) {
+              const resolverAddress = await registry.resolver(reverseNode);
+              console.log('🔍 Resolver address:', resolverAddress);
+              
+              if (resolverAddress && resolverAddress !== ethers.ZeroAddress) {
+                // 3. リゾルバーからBasename取得
+                const resolver = new ethers.Contract(resolverAddress, l2ResolverABI, provider);
+                result = await resolver.name(reverseNode);
+                console.log('🔍 Name from resolver:', result);
+              } else {
+                console.log('ℹ️ No resolver set for reverse record');
+              }
+            } else {
+              console.log('ℹ️ No reverse record exists for this address');
             }
-          } else {
-            throw error;
+          } catch (registryError: any) {
+            console.warn('Registry lookup failed, trying direct L2Resolver:', registryError.message);
+            
+            // フォールバック: L2Resolverを直接使用
+            const l2Resolver = new ethers.Contract(BASE_L2_RESOLVER, l2ResolverABI, provider);
+            try {
+              result = await l2Resolver.name(reverseNode);
+              console.log('🔍 Direct L2Resolver result:', result);
+            } catch (directError) {
+              console.warn('Direct L2Resolver also failed:', directError.message);
+            }
           }
+        } catch (error: any) {
+          console.error('Base Basename lookup error:', error);
+          throw error;
         }
 
         console.log('🔍 Basename lookup result:', {
           address,
           basename: result,
-          rpcUrl: provider._network ? provider._network.name : rpcUrl,
           networkName
         });
 
-        // 開発環境でのテスト用: 特定のアドレスに対して模擬Basenameを返す
         let finalResult = result;
-        if (!result && process.env.NODE_ENV === 'development') {
-          // ユーザーの実際のアドレスに対してテスト用Basenameを表示
-          if (address === '0xe5e28ce1f8eeae58bf61d1e22fcf9954327bfd1b') {
-            finalResult = 'yourname.base.eth'; // あなたのBasenameがあると仮定
-            console.log('🧪 Using mock basename for user address:', finalResult);
+        let foundOwnedBasename: string | null = null;
+        const reverseRecordExists = !!result;
+
+        // 逆引きで結果が得られない場合、所有するBasenameを検索
+        if (!finalResult) {
+          console.log('ℹ️ No reverse record found, checking for owned basenames...');
+          
+          try {
+            // 一般的なBasename候補をチェック
+            const potentialBasenames = [
+              `${address.substring(2, 8)}.base.eth`,
+              `${address.substring(2, 10)}.base.eth`,
+              'bakemonio.base.eth' // ユーザーの既知のBasename
+            ];
+            
+            const l2ResolverABI = ["function addr(bytes32 node) view returns (address)"];
+            const l2Resolver = new ethers.Contract(BASE_L2_RESOLVER, l2ResolverABI, provider);
+            
+            for (const candidate of potentialBasenames) {
+              try {
+                const candidateNode = ethers.namehash(candidate);
+                const candidateAddr = await l2Resolver.addr(candidateNode);
+                
+                if (candidateAddr && candidateAddr.toLowerCase() === address.toLowerCase()) {
+                  console.log(`✅ Found owned Basename: ${candidate}`);
+                  foundOwnedBasename = candidate;
+                  finalResult = candidate;
+                  break;
+                }
+              } catch (candidateError) {
+                // Continue to next candidate
+              }
+            }
+          } catch (searchError) {
+            console.warn('Basename ownership search failed:', searchError);
           }
-          // 古いテストアドレスもサポート
-          else if (address === '0x1234567890123456789012345678901234567890') {
-            finalResult = networkName.includes('Sepolia') ? 'testsepolia.base.eth' : 'testmainnet.base.eth';
-            console.log('🧪 Using mock basename for test address:', finalResult);
-          }
+        } else {
+          // 逆引きがある場合、それを所有Basenameとしても設定
+          foundOwnedBasename = result;
         }
 
         if (finalResult) {
@@ -127,14 +167,30 @@ export function useBasename(address: string | null): BasenameResult {
         
         // 結果をアラートでも表示（デバッグ用）
         if (process.env.NODE_ENV === 'development') {
-          console.log('🎯 BASENAME DEBUG - Final result:', { address, finalResult, networkName });
+          console.log('🎯 BASENAME DEBUG - Final result:', { 
+            address, 
+            finalResult, 
+            foundOwnedBasename,
+            reverseRecordExists,
+            networkName 
+          });
+          
+          // 逆引きが設定されていない場合の案内
+          if (!reverseRecordExists && foundOwnedBasename) {
+            console.log('💡 TIP: Set your primary name by calling setName() on ReverseRegistrar');
+            console.log('This will enable automatic reverse lookup');
+          }
         }
 
         setBasename(finalResult || null);
+        setOwnedBasename(foundOwnedBasename);
+        setHasReverseRecord(reverseRecordExists);
       } catch (err) {
         console.error('❌ Failed to fetch Basename:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch Basename');
         setBasename(null);
+        setOwnedBasename(null);
+        setHasReverseRecord(false);
       } finally {
         console.log('🏁 Basename lookup completed, loading=false');
         setLoading(false);
@@ -144,7 +200,7 @@ export function useBasename(address: string | null): BasenameResult {
     fetchBasename();
   }, [address]);
 
-  return { basename, loading, error };
+  return { basename, ownedBasename, hasReverseRecord, loading, error };
 }
 
 // Basenameからアドレスを取得するフック
@@ -166,44 +222,35 @@ export function useAddress(basename: string | null): AddressResult {
       setError(null);
 
       try {
-        // Base Mainnet と Base Sepolia の両方でBasenameを試行
-        // まずBase Sepoliaを試し、失敗した場合はMainnetを試す
-        let rpcUrl = 'https://sepolia.base.org';
-        let networkName = 'Base Sepolia';
+        // Base MainnetのL2Resolverを使用
+        const rpcUrl = 'https://mainnet.base.org';
+        const networkName = 'Base Mainnet';
         
         console.log('🔍 Resolving basename to address:', { basename, rpcUrl, networkName });
 
-        // ethers.jsで正引きルックアップ実行
-        let provider = new ethers.JsonRpcProvider(rpcUrl);
-        let result = null;
+        // Base MainnetのL2Resolverを使用
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const BASE_L2_RESOLVER = '0xC6d566A56A1aFf6508b41f6c90ff131615583BCD';
         
-        try {
-          result = await provider.resolveName(basename);
-        } catch (error: any) {
-          // Base SepoliaはENSをサポートしていない場合、Base Mainnetにフォールバック
-          if (error.code === 'UNSUPPORTED_OPERATION' && networkName.includes('Sepolia')) {
-            console.log('🔄 Base Sepolia does not support ENS, trying Base Mainnet for address resolution...');
-            provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-            try {
-              result = await provider.resolveName(basename);
-              networkName = 'Base Mainnet (fallback from Sepolia)';
-            } catch (fallbackError) {
-              console.warn('Failed to resolve on Base Mainnet as well:', fallbackError);
-              throw error;
-            }
-          } else {
-            throw error;
-          }
-        }
-
+        // 正引きノードを生成
+        const node = ethers.namehash(basename);
+        console.log('🔍 Forward lookup node:', node);
+        
+        // L2Resolverでアドレス解決
+        const l2ResolverABI = ["function addr(bytes32 node) view returns (address)"];
+        const l2Resolver = new ethers.Contract(BASE_L2_RESOLVER, l2ResolverABI, provider);
+        
+        const result = await l2Resolver.addr(node);
+        
         console.log('🔍 Address resolution result:', {
           basename,
           address: result,
-          rpcUrl: provider._network ? provider._network.name : rpcUrl,
           networkName
         });
 
-        setAddress(result || null);
+        // ZeroAddressの場合はnullに変換
+        const finalResult = result && result !== ethers.ZeroAddress ? result : null;
+        setAddress(finalResult);
       } catch (err) {
         console.warn('Failed to fetch address for Basename:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch address');
@@ -248,19 +295,44 @@ export async function getCachedBasename(address: string): Promise<string | null>
   }
 
   try {
-    // まずBase Sepoliaを試し、ENSサポートがない場合はBase Mainnetにフォールバック
-    let provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+    // Base MainnetのL2Resolverを使用
+    const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+    const BASE_L2_RESOLVER = '0xC6d566A56A1aFf6508b41f6c90ff131615583BCD';
+    const BASE_ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+    
     let result = null;
     
+    // 逆引きノードを生成
+    const reverseNode = ethers.namehash(`${address.toLowerCase().substring(2)}.addr.reverse`);
+    
+    // Registry経由でリゾルバーを取得
+    const registryABI = [
+      "function resolver(bytes32 node) view returns (address)",
+      "function recordExists(bytes32 node) view returns (bool)"
+    ];
+    const registry = new ethers.Contract(BASE_ENS_REGISTRY, registryABI, provider);
+    
     try {
-      result = await provider.lookupAddress(address);
-    } catch (error: any) {
-      if (error.code === 'UNSUPPORTED_OPERATION') {
-        console.log('🔄 Cached lookup: Base Sepolia does not support ENS, trying Base Mainnet...');
-        provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-        result = await provider.lookupAddress(address);
-      } else {
-        throw error;
+      const recordExists = await registry.recordExists(reverseNode);
+      
+      if (recordExists) {
+        const resolverAddress = await registry.resolver(reverseNode);
+        
+        if (resolverAddress && resolverAddress !== ethers.ZeroAddress) {
+          const resolverABI = ["function name(bytes32 node) view returns (string memory)"];
+          const resolver = new ethers.Contract(resolverAddress, resolverABI, provider);
+          result = await resolver.name(reverseNode);
+        }
+      }
+    } catch (registryError) {
+      // フォールバック: L2Resolverを直接使用
+      const l2ResolverABI = ["function name(bytes32 node) view returns (string memory)"];
+      const l2Resolver = new ethers.Contract(BASE_L2_RESOLVER, l2ResolverABI, provider);
+      
+      try {
+        result = await l2Resolver.name(reverseNode);
+      } catch (directError) {
+        console.warn('Cached lookup failed:', directError);
       }
     }
 
@@ -280,20 +352,23 @@ export async function getCachedAddress(basename: string): Promise<string | null>
   }
 
   try {
-    // まずBase Sepoliaを試し、ENSサポートがない場合はBase Mainnetにフォールバック
-    let provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+    // Base MainnetのL2Resolverを使用
+    const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+    const BASE_L2_RESOLVER = '0xC6d566A56A1aFf6508b41f6c90ff131615583BCD';
+    
     let result = null;
     
-    try {
-      result = await provider.resolveName(basename);
-    } catch (error: any) {
-      if (error.code === 'UNSUPPORTED_OPERATION') {
-        console.log('🔄 Cached address resolution: Base Sepolia does not support ENS, trying Base Mainnet...');
-        provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-        result = await provider.resolveName(basename);
-      } else {
-        throw error;
-      }
+    // 正引きノードを生成
+    const node = ethers.namehash(basename);
+    
+    // L2Resolverでアドレス解決
+    const l2ResolverABI = ["function addr(bytes32 node) view returns (address)"];
+    const l2Resolver = new ethers.Contract(BASE_L2_RESOLVER, l2ResolverABI, provider);
+    
+    result = await l2Resolver.addr(node);
+    
+    if (result && result === ethers.ZeroAddress) {
+      result = null;
     }
 
     addressCache.set(basename, result || null);
