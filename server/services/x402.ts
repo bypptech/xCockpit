@@ -40,12 +40,8 @@ export class X402Service {
       'ESP32_002': '0.005', // Gacha #002のfeeを$0.005USDCに設定
     };
     
-    const hour = new Date().getHours();
-    const peakHourMultiplier = (hour >= 18 && hour <= 22) ? 1.5 : 1.0;
-    
     const basePrice = devicePricing[deviceId] || '0.01';
-    const price = parseFloat(basePrice) * peakHourMultiplier;
-    return price.toFixed(3);
+    return basePrice;
   }
 
   static create402Response(deviceId: string, command: string, ttlMinutes: number = 5) {

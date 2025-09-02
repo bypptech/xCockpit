@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { MiniAppProvider } from './MiniAppProvider';
 import { Providers } from '../providers';
+import { SimpleBasenameDisplay } from '@/components/basename-display';
+import WalletConnection from '@/components/wallet-connection';
+import { WalletBalance } from '@/components/wallet-balance';
+import { SimpleNetworkSwitcher } from '@/components/simple-network-switcher';
+import { walletService } from '@/lib/coinbase-wallet';
 
 // Simplified Device type for demonstration
 interface Device {
@@ -19,6 +24,20 @@ interface Device {
 function DashboardContent() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
+  // Load wallet address on component mount
+  useEffect(() => {
+    const loadWalletAddress = async () => {
+      try {
+        const address = walletService.getCurrentAccount();
+        setWalletAddress(address);
+      } catch (error) {
+        console.log('No wallet connected');
+      }
+    };
+
+    loadWalletAddress();
+  }, []);
+
   // Mock devices data for now - will be replaced with API call
   const devices: Device[] = [
     {
@@ -28,20 +47,41 @@ function DashboardContent() {
       description: "ESP32-powered gacha machine with servo motor and LED indicators",
       commands: ['play'],
       pricing: {
-        play: { amount: "0.5", currency: "USDC", recipient: "0x742d35C4F7c8806FF6e5de0e1e5E93D4b0C4FED7" }
+        play: { amount: "0.01", currency: "USDC", recipient: "0x742d35C4F7c8806FF6e5de0e1e5E93D4b0C4FED7" }
+      },
+      status: "online",
+      location: "Tokyo Maker Space"
+    },
+    {
+      id: "ESP32_002",
+      name: "Smart Gacha #002",
+      type: "gacha", 
+      description: "Second ESP32-powered gacha machine with advanced features",
+      commands: ['play'],
+      pricing: {
+        play: { amount: "0.005", currency: "USDC", recipient: "0x742d35C4F7c8806FF6e5de0e1e5E93D4b0C4FED7" }
       },
       status: "online",
       location: "Tokyo Maker Space"
     }
   ];
 
-  const handleWalletConnect = () => {
-    // Simplified wallet connection for demo
-    setWalletAddress("0x742d35C4F7c8806FF6e5de0e1e5E93D4b0C4FED7");
+  const handleWalletConnect = async () => {
+    try {
+      const accounts = await walletService.connect();
+      setWalletAddress(accounts[0] || null);
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    }
   };
 
-  const handleWalletDisconnect = () => {
-    setWalletAddress(null);
+  const handleWalletDisconnect = async () => {
+    try {
+      await walletService.disconnect();
+      setWalletAddress(null);
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
   };
 
   const handleDeviceCommand = async (device: Device, command: string) => {
@@ -76,27 +116,24 @@ function DashboardContent() {
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold mb-4">Wallet Connection</h3>
-              {!walletAddress ? (
-                <button 
-                  onClick={handleWalletConnect}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                >
-                  Connect Wallet
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                  </div>
-                  <button 
-                    onClick={handleWalletDisconnect}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-                  >
-                    Disconnect
-                  </button>
-                </div>
-              )}
+              <WalletConnection 
+                walletAddress={walletAddress}
+                onConnect={handleWalletConnect}
+                onDisconnect={handleWalletDisconnect}
+              />
             </div>
+            
+            {/* Wallet Balance Card */}
+            <WalletBalance 
+              walletAddress={walletAddress}
+              className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
+            />
+
+            {/* Network Switcher Card */}
+            <SimpleNetworkSwitcher 
+              walletAddress={walletAddress}
+              className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
+            />
           </div>
 
           {/* Right Column - Devices */}

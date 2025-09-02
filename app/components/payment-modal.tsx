@@ -8,6 +8,7 @@ import { X402Client } from '@/lib/x402-client';
 import { balanceEvents } from '@/lib/balance-events';
 import { useMiniApp } from '@/providers/MiniAppProvider';
 import { useViralSharing } from '@/hooks/use-viral-sharing';
+import { BasenameDisplay } from '@/components/basename-display';
 import { type Device } from '@shared/schema';
 
 interface PaymentModalProps {
@@ -157,7 +158,11 @@ export default function PaymentModal({ device, command, amount, recipient, walle
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Recipient</span>
-              <span className="font-mono text-xs">{recipient.slice(0, 6)}...{recipient.slice(-4)}</span>
+              <BasenameDisplay 
+                address={recipient} 
+                variant="inline"
+                className="text-xs"
+              />
             </div>
           </div>
 

@@ -102,9 +102,40 @@ class WalletService {
     }
   }
 
-  async switchNetwork(network: 'base-sepolia' | 'sepolia-ethereum'): Promise<void> {
+  async switchToBaseMainnet(): Promise<void> {
+    try {
+      await this.provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x2105' }] // Base Mainnet chain ID (8453)
+      });
+    } catch (switchError: any) {
+      // If chain doesn't exist, add it
+      if (switchError.code === 4902) {
+        await this.provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0x2105',
+            chainName: 'Base',
+            nativeCurrency: {
+              name: 'ETH',
+              symbol: 'ETH',
+              decimals: 18
+            },
+            rpcUrls: ['https://mainnet.base.org'],
+            blockExplorerUrls: ['https://basescan.org']
+          }]
+        });
+      } else {
+        throw switchError;
+      }
+    }
+  }
+
+  async switchNetwork(network: 'base-sepolia' | 'base-mainnet' | 'sepolia-ethereum'): Promise<void> {
     if (network === 'base-sepolia') {
       await this.switchToBaseSepolia();
+    } else if (network === 'base-mainnet') {
+      await this.switchToBaseMainnet();
     } else if (network === 'sepolia-ethereum') {
       await this.switchToSepoliaEthereum();
     } else {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { walletService } from '@/lib/coinbase-wallet';
+import { BasenameDisplay } from '@/components/basename-display';
 
 interface WalletConnectionProps {
   walletAddress: string | null;
@@ -54,9 +55,13 @@ export default function WalletConnection({ walletAddress, onConnect, onDisconnec
     <div className="flex items-center space-x-3 bg-secondary px-3 py-2 rounded-lg" data-testid="wallet-connected">
       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-secondary-foreground" data-testid="text-wallet-address">
-          {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
-        </span>
+        <div data-testid="text-wallet-address">
+          <BasenameDisplay 
+            address={walletAddress} 
+            variant="inline"
+            className="text-sm font-medium text-secondary-foreground"
+          />
+        </div>
         <span className="text-xs text-muted-foreground">
           {networkInfo?.name || 'Loading...'}
         </span>
