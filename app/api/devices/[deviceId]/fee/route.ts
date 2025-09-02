@@ -1,10 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+
+// Path to the device fees file
+const FEES_FILE_PATH = join(process.cwd(), 'device-fees.json');
 
 // In-memory storage for fees (in production, use a database)
-const deviceFees: Record<string, number> = {
+let deviceFees: Record<string, number> = {
   'ESP32_001': 0.01,  // Default fee for Smart Gacha #001
   'ESP32_002': 0.005, // Default fee for Smart Gacha #002
 };
+
+// Load fees from file on startup
+try {
+  const fileContent = readFileSync(FEES_FILE_PATH, 'utf8');
+  const persistedFees = JSON.parse(fileContent);
+  
+  // Convert persisted format to simple number format
+  for (const [deviceId, feeData] of Object.entries(persistedFees)) {
+    if (typeof feeData === 'object' && feeData !== null && 'price' in feeData) {
+      deviceFees[deviceId] = parseFloat((feeData as any).price);
+    }
+  }
+  console.log('📁 Loaded fees from file:', deviceFees);
+} catch (error) {
+  console.log('📁 No fee file found, using defaults');
+}
 
 // GET: Retrieve current fee for a device
 export async function GET(

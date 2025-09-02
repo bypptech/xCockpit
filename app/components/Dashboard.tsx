@@ -163,18 +163,21 @@ function DashboardContent() {
       const deviceIds = ['ESP32_001', 'ESP32_002'];
       
       for (const deviceId of deviceIds) {
+        console.log(`Loading fee for ${deviceId}...`);
         const response = await fetch(`/api/devices/${deviceId}/fee`);
         if (response.ok) {
           const data = await response.json();
+          console.log(`Fee data for ${deviceId}:`, data);
           setGachaFees(prev => ({
             ...prev,
             [deviceId]: data.currentFee
           }));
         } else {
+          console.warn(`Failed to load fee for ${deviceId}, using default`);
           // Set default fee if API call fails
           setGachaFees(prev => ({
             ...prev,
-            [deviceId]: deviceId === 'ESP32_001' ? 0.01 : 0.005
+            [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.005
           }));
         }
       }
@@ -182,7 +185,7 @@ function DashboardContent() {
       console.error('Failed to load gacha fees:', error);
       // Set default fees on error
       setGachaFees({
-        'ESP32_001': 0.01,
+        'ESP32_001': 0.5,
         'ESP32_002': 0.005
       });
     }
