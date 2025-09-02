@@ -1,9 +1,11 @@
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { type Device, type Session } from '@shared/schema';
 
 interface DeviceCardProps {
   device: Device;
-  onCommand: (device: Device, command: string) => void;
+  onCommand: (device: Device, command: string, customFee?: number) => void;
   isWalletConnected: boolean;
   userSessions: Session[];
 }
@@ -11,6 +13,24 @@ interface DeviceCardProps {
 export default function DeviceCard({ device, onCommand, isWalletConnected, userSessions }: DeviceCardProps) {
   const activeSession = userSessions.find(s => s.deviceId === device.id);
   const hasAccess = !!activeSession;
+  
+  // State for custom fee input (only for gacha devices)
+  const [customFee, setCustomFee] = useState<string>('0.500');
+  const [isEditingFee, setIsEditingFee] = useState(false);
+  
+  // Load saved fee from API
+  useEffect(() => {
+    if (device.type === 'gacha') {
+      fetch(`/api/devices/${device.id}/fee`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.currentFee) {
+            setCustomFee(data.currentFee.toString());
+          }
+        })
+        .catch(err => console.error('Failed to load fee:', err));
+    }
+  }, [device.id, device.type]);
 
   const getDeviceIcon = () => {
     switch (device.type) {
@@ -143,18 +163,91 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         </div>
       </div>
 
+      {/* Fee Input for Gacha Devices */}
+      {device.type === 'gacha' && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <label className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2 block">
+            Custom Play Fee (USDC)
+          </label>
+          <div className="flex gap-2">
+            {isEditingFee ? (
+              <>
+                <Input
+                  type="number"
+                  value={customFee}
+                  onChange={(e) => setCustomFee(e.target.value)}
+                  step="0.001"
+                  min="0.001"
+                  max="999"
+                  className="flex-1"
+                  placeholder="Enter fee..."
+                />
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    const fee = parseFloat(customFee);
+                    if (fee >= 0.001 && fee <= 999) {
+                      try {
+                        const res = await fetch(`/api/devices/${device.id}/fee`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ fee, walletAddress: 'user' })
+                        });
+                        if (res.ok) {
+                          setIsEditingFee(false);
+                        }
+                      } catch (err) {
+                        console.error('Failed to update fee:', err);
+                      }
+                    }
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditingFee(false)}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600">
+                  <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">
+                    ${parseFloat(customFee).toFixed(3)}
+                  </span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">USDC</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditingFee(true)}
+                  className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                >
+                  <i className="fas fa-edit mr-1"></i>
+                  Edit
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Control Buttons */}
       <div className="flex space-x-3">
         <Button 
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-          onClick={() => onCommand(device, getDeviceCommand())}
+          onClick={() => onCommand(device, getDeviceCommand(), device.type === 'gacha' ? parseFloat(customFee) : undefined)}
           disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready')}
           data-testid={`button-device-command-${device.id}`}
         >
           <i className={`${getDeviceIcon()} mr-2`}></i>
           {getCommandLabel()}
           <span className="ml-2 text-sm opacity-90">
-            ${parseFloat((device.metadata as { price?: string } | null)?.price || '0.01').toFixed(3)} USDC
+            ${device.type === 'gacha' ? parseFloat(customFee).toFixed(3) : parseFloat((device.metadata as { price?: string } | null)?.price || '0.01').toFixed(3)} USDC
           </span>
         </Button>
         <Button 

@@ -1,16 +1,59 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MiniAppProvider } from './MiniAppProvider';
 import { Providers } from '../providers';
-import { SimpleBasenameDisplay } from '@/components/basename-display';
-import { BasenameSetup } from '@/components/basename-setup';
-import { useBasename } from '@/hooks/use-basenames';
-import { GachaFeeCustomizer } from '@/components/gacha-fee-customizer';
-import WalletConnection from '@/components/wallet-connection';
-import { WalletBalance } from '@/components/wallet-balance';
-import { SimpleNetworkSwitcher } from '@/components/simple-network-switcher';
-import { walletService } from '@/lib/coinbase-wallet';
+import { GachaFeeCustomizer } from './gacha-fee-customizer';
+
+// Simple placeholder components
+const SimpleBasenameDisplay = ({ address, className }: { address: string; className?: string }) => (
+  <div className={className}>
+    {address.slice(0, 6)}...{address.slice(-4)}
+  </div>
+);
+
+const WalletConnection = ({ walletAddress, onConnect, onDisconnect }: any) => (
+  <div className="space-y-3">
+    {walletAddress ? (
+      <>
+        <div className="text-sm text-gray-600">Connected</div>
+        <button
+          onClick={onDisconnect}
+          className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+        >
+          Disconnect
+        </button>
+      </>
+    ) : (
+      <button
+        onClick={onConnect}
+        className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+      >
+        Connect Wallet
+      </button>
+    )}
+  </div>
+);
+
+const WalletBalance = ({ walletAddress, className }: any) => (
+  <div className={`rounded-2xl p-6 ${className}`}>
+    <h3 className="text-lg font-semibold mb-4">Balance</h3>
+    {walletAddress ? (
+      <div className="text-2xl font-bold">0.00 USDC</div>
+    ) : (
+      <div className="text-gray-500">Connect wallet to view balance</div>
+    )}
+  </div>
+);
+
+const SimpleNetworkSwitcher = ({ walletAddress, className }: any) => (
+  <div className={`rounded-2xl p-6 ${className}`}>
+    <h3 className="text-lg font-semibold mb-4">Network</h3>
+    <div className="text-sm text-gray-600">Base Sepolia</div>
+  </div>
+);
+
+const BasenameSetup = ({ address, onBasenameSet }: any) => null;
 
 // Simplified Device type for demonstration
 interface Device {
@@ -31,21 +74,11 @@ function DashboardContent() {
   const [gachaFees, setGachaFees] = useState<{ [deviceId: string]: number }>({});
   const [isPlayingGacha, setIsPlayingGacha] = useState<{ [deviceId: string]: boolean }>({});
   
-  // Basename hook for displaying .base.eth names
-  const { 
-    basename, 
-    ownedBasename, 
-    hasReverseRecord, 
-    loading: basenameLoading 
-  } = useBasename(walletAddress);
-
-  console.log('🎯 Dashboard - Basename Hook Result:', { 
-    basename, 
-    ownedBasename, 
-    hasReverseRecord, 
-    basenameLoading, 
-    walletAddress 
-  });
+  // Placeholder for basename functionality
+  const basename = null;
+  const ownedBasename = null;
+  const hasReverseRecord = false;
+  const basenameLoading = false;
   
   // ウォレットアドレスが変わるたびにログ出力
   useEffect(() => {
@@ -58,7 +91,8 @@ function DashboardContent() {
     
     const loadWalletAddress = async () => {
       try {
-        const address = walletService.getCurrentAccount();
+        // Simulate wallet connection for testing
+        const address = null;
         console.log('💰 Dashboard wallet address:', address);
         setWalletAddress(address);
         
@@ -116,35 +150,47 @@ function DashboardContent() {
   ];
 
   const handleWalletConnect = async () => {
-    console.log('🔗 Attempting to connect wallet...');
-    try {
-      const accounts = await walletService.connect();
-      console.log('✅ Wallet connected, accounts:', accounts);
-      setWalletAddress(accounts[0] || null);
-      console.log('💰 Set wallet address to:', accounts[0] || null);
-    } catch (error) {
-      console.error('❌ Failed to connect wallet:', error);
-    }
+    console.log('🔗 Simulating wallet connection...');
+    // Simulate wallet connection with a test address
+    const testAddress = '0x742d35C4F7c8806FF6e5de0e1e5E93D4b0C4FED7';
+    setWalletAddress(testAddress);
+    console.log('💰 Set wallet address to:', testAddress);
   };
 
   const loadGachaFees = async () => {
     try {
-      const response = await fetch('/api/devices/ESP32_001/fee');
-      if (response.ok) {
-        const data = await response.json();
-        setGachaFees(prev => ({
-          ...prev,
-          'ESP32_001': data.currentFee
-        }));
+      // Load fees for all gacha devices
+      const deviceIds = ['ESP32_001', 'ESP32_002'];
+      
+      for (const deviceId of deviceIds) {
+        const response = await fetch(`/api/devices/${deviceId}/fee`);
+        if (response.ok) {
+          const data = await response.json();
+          setGachaFees(prev => ({
+            ...prev,
+            [deviceId]: data.currentFee
+          }));
+        } else {
+          // Set default fee if API call fails
+          setGachaFees(prev => ({
+            ...prev,
+            [deviceId]: deviceId === 'ESP32_001' ? 0.01 : 0.005
+          }));
+        }
       }
     } catch (error) {
       console.error('Failed to load gacha fees:', error);
+      // Set default fees on error
+      setGachaFees({
+        'ESP32_001': 0.01,
+        'ESP32_002': 0.005
+      });
     }
   };
 
   const handleWalletDisconnect = async () => {
     try {
-      await walletService.disconnect();
+      // Simulate wallet disconnect
       setWalletAddress(null);
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
@@ -317,90 +363,66 @@ function DashboardContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {devices.map((device) => (
-                <div key={device.id} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {device.name}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      {device.description}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        device.status === 'online' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                      }`}>
-                        {device.status}
-                      </span>
+                <div key={device.id}>
+                  {device.type === 'gacha' && gachaFees[device.id] !== undefined ? (
+                    <GachaFeeCustomizer
+                      deviceId={device.id}
+                      deviceName={device.name}
+                      currentFee={gachaFees[device.id]}
+                      onFeeChange={(newFee) => handleFeeChange(device.id, newFee)}
+                      onPlayGacha={(fee) => handlePlayGacha(device.id, fee)}
+                      isPlaying={isPlayingGacha[device.id] || false}
+                      walletAddress={walletAddress}
+                    />
+                  ) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+                      <div className="mb-4">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                          {device.name}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                          {device.description}
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            device.status === 'online' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                          }`}>
+                            {device.status}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {device.type === 'gacha' && gachaFees[device.id] === undefined ? (
+                          <div className="text-center py-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            <p className="text-gray-600 dark:text-gray-400">Loading fee settings...</p>
+                          </div>
+                        ) : (
+                          device.commands.map((command) => (
+                            <button
+                              key={command}
+                              onClick={() => handleDeviceCommand(device, command)}
+                              disabled={!walletAddress}
+                              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                            >
+                              {command.toUpperCase()} - {device.pricing[command]?.amount} {device.pricing[command]?.currency}
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {device.commands.map((command) => (
-                      <button
-                        key={command}
-                        onClick={() => handleDeviceCommand(device, command)}
-                        disabled={!walletAddress}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
-                      >
-                        {command.toUpperCase()} - {device.pricing[command]?.amount} {device.pricing[command]?.currency}
-                      </button>
-                    ))}
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Smart Gacha Fee Customizer */}
-        <div className="mt-8">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
-              🎮 Smart Gacha Customization
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {gachaFees['ESP32_001'] !== undefined ? (
-                <GachaFeeCustomizer
-                  deviceId="ESP32_001"
-                  deviceName="Smart Gacha #001"
-                  currentFee={gachaFees['ESP32_001']}
-                  onFeeChange={(newFee) => handleFeeChange('ESP32_001', newFee)}
-                  onPlayGacha={(fee) => handlePlayGacha('ESP32_001', fee)}
-                  isPlaying={isPlayingGacha['ESP32_001'] || false}
-                  walletAddress={walletAddress}
-                />
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-600 dark:text-gray-400">Loading fee settings...</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Basename Setup Section */}
-        {walletAddress && (
-          <div className="mt-8">
-            <BasenameSetup
-              address={walletAddress}
-              ownedBasename={ownedBasename}
-              hasReverseRecord={hasReverseRecord}
-              onBasenameSet={(basename) => {
-                console.log('🎉 Basename set as primary:', basename);
-                // Refresh the page to update basename data
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
-              }}
-              className="max-w-2xl mx-auto"
-            />
-          </div>
-        )}
+        {/* Placeholder for Basename Setup Section */}
 
         {/* Mini App Features */}
         <div className="mt-12 text-center">
