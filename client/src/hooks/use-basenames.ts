@@ -103,7 +103,7 @@ export function useBasename(address: string | null): BasenameResult {
               result = await l2Resolver.name(reverseNode);
               console.log('🔍 Direct L2Resolver result:', result);
             } catch (directError) {
-              console.warn('Direct L2Resolver also failed:', directError.message);
+              console.warn('Direct L2Resolver also failed:', directError instanceof Error ? directError.message : 'Unknown error');
             }
           }
         } catch (error: any) {
