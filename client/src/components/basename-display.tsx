@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useBasename, formatAddress } from '@/hooks/use-basenames';
 import { Badge } from '@/components/ui/badge';
