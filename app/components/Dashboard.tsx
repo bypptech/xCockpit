@@ -29,7 +29,16 @@ function DashboardContent() {
     const loadWalletAddress = async () => {
       try {
         const address = walletService.getCurrentAccount();
+        console.log('💰 Dashboard wallet address:', address);
         setWalletAddress(address);
+        
+        // 開発環境でBasenamesテスト用にテストアドレスを設定
+        if (!address && process.env.NODE_ENV === 'development') {
+          console.log('🧪 Setting test address for Basenames development');
+          // 開発環境でのBasename表示テスト用のアドレス
+          // 実際の動作を確認するため
+          setWalletAddress('0x1234567890123456789012345678901234567890'); // Test address with mock basename
+        }
       } catch (error) {
         console.log('No wallet connected');
       }

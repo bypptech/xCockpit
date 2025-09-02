@@ -29,6 +29,7 @@ export function useBasename(address: string | null): BasenameResult {
     }
 
     const fetchBasename = async () => {
+      console.log('🔍 Fetching basename for:', address);
       setLoading(true);
       setError(null);
 
@@ -80,12 +81,26 @@ export function useBasename(address: string | null): BasenameResult {
           networkName
         });
 
-        setBasename(result || null);
+        // 開発環境でのテスト用: 特定のアドレスに対して模擬Basenameを返す
+        let finalResult = result;
+        if (!result && address === '0x1234567890123456789012345678901234567890' && process.env.NODE_ENV === 'development') {
+          finalResult = 'test.base.eth';
+          console.log('🧪 Using mock basename for development:', finalResult);
+        }
+
+        if (finalResult) {
+          console.log('✅ Basename found:', finalResult);
+        } else {
+          console.log('ℹ️ No basename found for address:', address, '- This is normal for addresses without Basenames');
+        }
+
+        setBasename(finalResult || null);
       } catch (err) {
-        console.warn('Failed to fetch Basename:', err);
+        console.error('❌ Failed to fetch Basename:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch Basename');
         setBasename(null);
       } finally {
+        console.log('🏁 Basename lookup completed, loading=false');
         setLoading(false);
       }
     };
