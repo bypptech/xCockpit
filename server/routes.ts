@@ -8,9 +8,25 @@ import { insertUserSchema, insertPaymentSchema } from "@shared/schema";
 
 let wsService: WebSocketService;
 
+// Helper function to get device fee
+async function getDeviceFee(deviceId: string): Promise<string> {
+  try {
+    const device = await storage.getDevice(deviceId);
+    if (!device) {
+      throw new Error("Device not found");
+    }
+    // Default to 0.01 if no price is set or customFee is false
+    const fee = device.metadata?.customFee ? parseFloat(device.metadata.price) : 0.01;
+    return fee.toFixed(3); // Return as string with 3 decimal places
+  } catch (error) {
+    console.error(`Failed to get fee for device ${deviceId}:`, error);
+    return "0.01"; // Fallback to default fee
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-  
+
   // Initialize WebSocket service
   wsService = new WebSocketService(httpServer);
 
@@ -54,7 +70,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no payment header, return 402 Payment Required (initial request)
       if (!paymentHeader) {
         console.log(`💰 402 Payment Required for ${deviceId} - ${command}`);
-        const response = X402Service.create402Response(deviceId, command);
+        // Create 402 Payment Required response
+        const deviceFeeAmount = await getDeviceFee(deviceId);
+        const paymentInfo = {
+          amount: deviceFeeAmount.toString(),
+          currency: "USDC",
+          recipient: "0x1c7d4034fcad824d6167c45750ac75ac007ac238"
+        };
+        const response = X402Service.create402Response(deviceId, command, paymentInfo);
         return res.status(402)
           .set(response.headers)
           .json(response.body);
@@ -63,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse and verify payment (re-request with X-Payment header)
       const payment = X402Service.parsePaymentHeader(paymentHeader);
       if (!payment) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: {
             code: "INVALID_PAYMENT_HEADER",
             message: "Invalid X-Payment header format"
@@ -73,15 +96,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Enhanced verification with signature validation
       const verificationResult = await X402Service.verifyPayment(
-        payment, 
-        requirementsHeader, 
+        payment,
+        requirementsHeader,
         signatureHeader
       );
-      
+
       if (!verificationResult.verified) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: {
-            code: verificationResult.error?.includes('confirmations') 
+            code: verificationResult.error?.includes('confirmations')
               ? 'INSUFFICIENT_CONFIRMATIONS'
               : verificationResult.error?.includes('signature')
               ? 'INVALID_SIGNATURE'
@@ -133,10 +156,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verificationResult.confirmations || 0,
         process.env.NETWORK
       );
-      
+
       // Set x402 standard response headers
       res.set('X-Payment-State', paymentStateHeader);
-      
+
       // Success response (device command executed)
       res.status(200).json({
         result: command,
@@ -152,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Device command error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: {
           code: "DEVICE_COMMAND_FAILED",
           message: "Failed to execute device command",
@@ -206,8 +229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate fee range
       if (typeof fee !== 'number' || fee < 0.001 || fee > 999) {
-        return res.status(400).json({ 
-          message: "Fee must be between 0.001 and 999 USDC" 
+        return res.status(400).json({
+          message: "Fee must be between 0.001 and 999 USDC"
         });
       }
 
@@ -219,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For now, allow any wallet to set custom fees
       // In production, you might want to restrict this to device owners
-      
+
       // Update device metadata with custom fee
       const updatedDevice = {
         ...device,
@@ -251,14 +274,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/devices/:deviceId/fee", async (req, res) => {
     try {
       const { deviceId } = req.params;
-      
+
       const device = await storage.getDevice(deviceId);
       if (!device) {
         return res.status(404).json({ message: "Device not found" });
       }
 
       const currentFee = parseFloat(device.metadata?.price || "0.01");
-      
+
       res.json({
         deviceId,
         deviceName: device.name,
@@ -292,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const info = X402Service.getSignatureSystemInfo();
       res.json(info);
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: {
           code: "SIGNATURE_INFO_FAILED",
           message: "Failed to get signature system info",
@@ -307,10 +330,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const health = X402Service.healthCheck();
       const isHealthy = health.signature.valid && health.blockchain.connected;
-      
+
       res.status(isHealthy ? 200 : 503).json(health);
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: {
           code: "HEALTH_CHECK_FAILED",
           message: "Health check failed",
@@ -326,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 簡易的な管理者認証（実際の本番では JWT など適切な認証を使用）
       const adminKey = req.headers['x-admin-key'];
       if (adminKey !== process.env.X402_ADMIN_KEY) {
-        return res.status(401).json({ 
+        return res.status(401).json({
           error: {
             code: "UNAUTHORIZED",
             message: "Invalid admin key"
@@ -336,7 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { keyId, secret, algorithm } = req.body;
       if (!keyId) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: {
             code: "INVALID_REQUEST",
             message: "keyId is required"
@@ -345,9 +368,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = X402Service.rotateSigningKey(keyId, secret, algorithm);
-      
+
       if (!result.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: {
             code: "KEY_ROTATION_FAILED",
             message: result.error
@@ -362,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: {
           code: "KEY_ROTATION_ERROR",
           message: "Failed to rotate key",
@@ -376,16 +399,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/.well-known/jwks.json", (_req, res) => {
     try {
       const jwks = X402Service.getJWKS();
-      
+
       // キャッシュヘッダーを設定
       res.set({
         'Cache-Control': 'public, max-age=3600, s-maxage=3600', // 1時間キャッシュ
         'Content-Type': 'application/json'
       });
-      
+
       res.json(jwks);
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: {
           code: "JWKS_ERROR",
           message: "Failed to generate JWKS",
@@ -400,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const adminKey = req.headers['x-admin-key'];
       if (adminKey !== process.env.X402_ADMIN_KEY) {
-        return res.status(401).json({ 
+        return res.status(401).json({
           error: {
             code: "UNAUTHORIZED",
             message: "Invalid admin key"
@@ -411,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jwks = X402Service.getJWKS();
       res.json(jwks);
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: {
           code: "JWKS_ERROR",
           message: "Failed to generate JWKS",
@@ -426,9 +449,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Handle Farcaster Frame interactions
       const { untrustedData, trustedData } = req.body;
-      
+
       console.log('Frame interaction received:', { untrustedData, trustedData });
-      
+
       // Return frame response to launch the Mini App
       res.json({
         type: "frame",
@@ -438,8 +461,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             text: "🚀 Launch xCockpit",
             action: "link",
-            target: process.env.NODE_ENV === 'production' 
-              ? "https://xcockpit.replit.app" 
+            target: process.env.NODE_ENV === 'production'
+              ? "https://xcockpit.replit.app"
               : "http://localhost:5000"
           }
         ],
@@ -458,8 +481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Web3 IoT Control Dashboard",
       icon: "🚀",
       version: "1.0.0",
-      url: process.env.NODE_ENV === 'production' 
-        ? "https://xcockpit.replit.app" 
+      url: process.env.NODE_ENV === 'production'
+        ? "https://xcockpit.replit.app"
         : "http://localhost:5000",
       frame: {
         version: "vNext",
@@ -472,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       }
     };
-    
+
     res.json(manifest);
   });
 
