@@ -121,6 +121,22 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async updateDevice(id: string, updatedDevice: Device): Promise<Device> {
+    const device = this.devices.get(id);
+    if (!device) {
+      throw new Error(`Device ${id} not found`);
+    }
+    
+    const updated = {
+      ...device,
+      ...updatedDevice,
+      lastActivity: new Date()
+    };
+    
+    this.devices.set(id, updated);
+    return updated;
+  }
+
   // Payments
   async getPayment(id: string): Promise<Payment | undefined> {
     return this.payments.get(id);

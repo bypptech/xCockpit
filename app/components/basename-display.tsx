@@ -6,13 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+// Simple toast function for Node.js version
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  console.log(`${type === 'success' ? '✅' : '❌'} ${message}`);
+  // In a real app, you might want to implement proper toast notifications
+};
 
 interface BasenameDisplayProps {
   address: string;
@@ -37,7 +35,6 @@ export function BasenameDisplay({
   
   console.log('BasenameDisplay Component - Hook Result:', { basename, loading, error });
   
-  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,16 +44,9 @@ export function BasenameDisplay({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(address);
-      toast({
-        title: 'Copied!',
-        description: 'Address copied to clipboard',
-      });
+      showToast('Address copied to clipboard');
     } catch (error) {
-      toast({
-        title: 'Failed to copy',
-        description: 'Could not copy address to clipboard',
-        variant: 'destructive',
-      });
+      showToast('Could not copy address to clipboard', 'error');
     }
   };
 
@@ -103,6 +93,7 @@ export function BasenameDisplay({
             size="sm"
             onClick={handleCopy}
             className="h-6 w-6 p-0"
+            title="Copy address"
           >
             <Copy className="h-3 w-3" />
           </Button>
@@ -113,27 +104,14 @@ export function BasenameDisplay({
 
   if (variant === 'inline') {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span 
-              className={`font-mono text-sm hover:text-blue-600 cursor-help ${
-                isBasenameAvailable ? 'text-blue-500' : 'text-gray-600'
-              } ${className}`}
-            >
-              {displayText}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="space-y-1">
-              <p className="font-mono text-xs">{address}</p>
-              {isBasenameAvailable && (
-                <p className="text-xs text-blue-500">✓ Basename available</p>
-              )}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <span 
+        className={`font-mono text-sm hover:text-blue-600 cursor-help ${
+          isBasenameAvailable ? 'text-blue-500' : 'text-gray-600'
+        } ${className}`}
+        title={`${address}${isBasenameAvailable ? ' (✓ Basename available)' : ''}`}
+      >
+        {displayText}
+      </span>
     );
   }
 
@@ -161,43 +139,27 @@ export function BasenameDisplay({
         )}
         
         {showCopyButton && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Copy address</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            className="h-6 w-6 p-0"
+            title="Copy address"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
         )}
 
         {showExternalLink && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExternalLink}
-                  className="h-6 w-6 p-0"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View on BaseScan</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExternalLink}
+            className="h-6 w-6 p-0"
+            title="View on BaseScan"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </Button>
         )}
       </div>
 

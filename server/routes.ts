@@ -198,6 +198,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update device custom fee
+  app.post("/api/devices/:deviceId/fee", async (req, res) => {
+    try {
+      const { deviceId } = req.params;
+      const { fee, walletAddress } = req.body;
+
+      // Validate fee range
+      if (typeof fee !== 'number' || fee < 0.001 || fee > 999) {
+        return res.status(400).json({ 
+          message: "Fee must be between 0.001 and 999 USDC" 
+        });
+      }
+
+      // Get device
+      const device = await storage.getDevice(deviceId);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      // For now, allow any wallet to set custom fees
+      // In production, you might want to restrict this to device owners
+      
+      // Update device metadata with custom fee
+      const updatedDevice = {
+        ...device,
+        metadata: {
+          ...device.metadata,
+          price: fee.toFixed(3),
+          customFee: true,
+          updatedBy: walletAddress,
+          updatedAt: new Date().toISOString()
+        }
+      };
+
+      await storage.updateDevice(deviceId, updatedDevice);
+
+      res.json({
+        success: true,
+        deviceId,
+        newFee: fee,
+        message: `Fee updated to ${fee} USDC for ${device.name}`
+      });
+
+    } catch (error) {
+      console.error('Fee update error:', error);
+      res.status(500).json({ message: "Failed to update device fee" });
+    }
+  });
+
+  // Get device custom fee
+  app.get("/api/devices/:deviceId/fee", async (req, res) => {
+    try {
+      const { deviceId } = req.params;
+      
+      const device = await storage.getDevice(deviceId);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+
+      const currentFee = parseFloat(device.metadata?.price || "0.01");
+      
+      res.json({
+        deviceId,
+        deviceName: device.name,
+        currentFee,
+        isCustom: device.metadata?.customFee || false,
+        updatedBy: device.metadata?.updatedBy,
+        updatedAt: device.metadata?.updatedAt,
+        minFee: 0.001,
+        maxFee: 999
+      });
+
+    } catch (error) {
+      console.error('Fee fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch device fee" });
+    }
+  });
+
   // WebSocket status endpoint
   app.get("/api/websocket/status", (req, res) => {
     const connectedDevices = wsService.getConnectedDevices();

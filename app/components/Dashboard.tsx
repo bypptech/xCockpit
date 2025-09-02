@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { MiniAppProvider } from './MiniAppProvider';
 import { Providers } from '../providers';
 import { SimpleBasenameDisplay } from '@/components/basename-display';
+import { BasenameSetup } from '@/components/basename-setup';
+import { useBasename } from '@/hooks/use-basenames';
+import { GachaFeeCustomizer } from '@/components/gacha-fee-customizer';
 import WalletConnection from '@/components/wallet-connection';
 import { WalletBalance } from '@/components/wallet-balance';
 import { SimpleNetworkSwitcher } from '@/components/simple-network-switcher';
@@ -25,6 +28,26 @@ function DashboardContent() {
   console.log('🚀 DASHBOARD COMPONENT RENDERING');
   
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [gachaFees, setGachaFees] = useState<{ [deviceId: string]: number }>({
+    'ESP32_001': 0.01
+  });
+  const [isPlayingGacha, setIsPlayingGacha] = useState<{ [deviceId: string]: boolean }>({});
+  
+  // Basename hook for displaying .base.eth names
+  const { 
+    basename, 
+    ownedBasename, 
+    hasReverseRecord, 
+    loading: basenameLoading 
+  } = useBasename(walletAddress);
+
+  console.log('🎯 Dashboard - Basename Hook Result:', { 
+    basename, 
+    ownedBasename, 
+    hasReverseRecord, 
+    basenameLoading, 
+    walletAddress 
+  });
   
   // ウォレットアドレスが変わるたびにログ出力
   useEffect(() => {
@@ -47,6 +70,11 @@ function DashboardContent() {
           console.log('🧪 Testing with user wallet address for Basename verification');
           // ユーザーの実際のウォレットアドレスでテスト
           setWalletAddress('0xe5e28ce1f8eeae58bf61d1e22fcf9954327bfd1b');
+        }
+
+        // Load initial fee data for Smart Gacha devices
+        if (address) {
+          loadGachaFees();
         }
       } catch (error) {
         console.log('No wallet connected');
@@ -97,6 +125,21 @@ function DashboardContent() {
     }
   };
 
+  const loadGachaFees = async () => {
+    try {
+      const response = await fetch('/api/devices/ESP32_001/fee');
+      if (response.ok) {
+        const data = await response.json();
+        setGachaFees(prev => ({
+          ...prev,
+          'ESP32_001': data.currentFee
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load gacha fees:', error);
+    }
+  };
+
   const handleWalletDisconnect = async () => {
     try {
       await walletService.disconnect();
@@ -112,6 +155,67 @@ function DashboardContent() {
       return;
     }
     alert(`Executing ${command} on ${device.name} - Mini App ready!`);
+  };
+
+  // Handle fee change for gacha devices
+  const handleFeeChange = async (deviceId: string, newFee: number) => {
+    try {
+      const response = await fetch(`/api/devices/${deviceId}/fee`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fee: newFee,
+          walletAddress: walletAddress
+        })
+      });
+
+      if (response.ok) {
+        setGachaFees(prev => ({
+          ...prev,
+          [deviceId]: newFee
+        }));
+        alert(`Fee updated to ${newFee} USDC!`);
+      } else {
+        const error = await response.json();
+        alert(`Failed to update fee: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Fee update error:', error);
+      alert('Failed to update fee. Please try again.');
+    }
+  };
+
+  // Handle gacha play with custom fee
+  const handlePlayGacha = async (deviceId: string, fee: number) => {
+    if (!walletAddress) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    setIsPlayingGacha(prev => ({
+      ...prev,
+      [deviceId]: true
+    }));
+
+    try {
+      // Simulate gacha play
+      setTimeout(() => {
+        setIsPlayingGacha(prev => ({
+          ...prev,
+          [deviceId]: false
+        }));
+        alert(`🎉 Gacha played with ${fee} USDC! Check your rewards!`);
+      }, 3000);
+    } catch (error) {
+      setIsPlayingGacha(prev => ({
+        ...prev,
+        [deviceId]: false
+      }));
+      console.error('Gacha play error:', error);
+      alert('Failed to play gacha. Please try again.');
+    }
   };
 
   return (
@@ -247,6 +351,46 @@ function DashboardContent() {
             </div>
           </div>
         </div>
+
+        {/* Smart Gacha Fee Customizer */}
+        {walletAddress && (
+          <div className="mt-8">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+                🎮 Smart Gacha Customization
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <GachaFeeCustomizer
+                  deviceId="ESP32_001"
+                  deviceName="Smart Gacha #001"
+                  currentFee={gachaFees['ESP32_001'] || 0.01}
+                  onFeeChange={(newFee) => handleFeeChange('ESP32_001', newFee)}
+                  onPlayGacha={(fee) => handlePlayGacha('ESP32_001', fee)}
+                  isPlaying={isPlayingGacha['ESP32_001'] || false}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Basename Setup Section */}
+        {walletAddress && (
+          <div className="mt-8">
+            <BasenameSetup
+              address={walletAddress}
+              ownedBasename={ownedBasename}
+              hasReverseRecord={hasReverseRecord}
+              onBasenameSet={(basename) => {
+                console.log('🎉 Basename set as primary:', basename);
+                // Refresh the page to update basename data
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              }}
+              className="max-w-2xl mx-auto"
+            />
+          </div>
+        )}
 
         {/* Mini App Features */}
         <div className="mt-12 text-center">
