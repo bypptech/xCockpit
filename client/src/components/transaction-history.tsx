@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { type Payment } from '@shared/schema';
+import { type Payment, type Device } from '@shared/schema';
 
 interface TransactionHistoryProps {
   transactions: Payment[];
+  devices?: Device[];
 }
 
-export default function TransactionHistory({ transactions }: TransactionHistoryProps) {
+export default function TransactionHistory({ transactions, devices = [] }: TransactionHistoryProps) {
   const [showAll, setShowAll] = useState(false);
 
   const getTransactionIcon = (command: string) => {
