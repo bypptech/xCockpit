@@ -262,6 +262,7 @@ export default function Dashboard() {
             
             <TransactionHistory 
               transactions={paymentHistory}
+              devices={devices as Device[]}
               data-testid="transaction-history"
             />
             

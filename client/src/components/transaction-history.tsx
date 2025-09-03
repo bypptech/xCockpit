@@ -9,6 +9,11 @@ interface TransactionHistoryProps {
 export default function TransactionHistory({ transactions, devices = [] }: TransactionHistoryProps) {
   const [showAll, setShowAll] = useState(false);
 
+  const getDeviceName = (deviceId: string) => {
+    const device = devices.find(d => d.id === deviceId);
+    return device ? device.name : 'Unknown Device';
+  };
+
   const getTransactionIcon = (command: string) => {
     switch (command) {
       case 'unlock':
@@ -90,7 +95,7 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
                 </div>
                 <div>
                   <p className="font-medium text-sm text-card-foreground" data-testid={`text-transaction-action-${index}`}>
-                    {tx.command.charAt(0).toUpperCase() + tx.command.slice(1)} Device
+                    {tx.command.charAt(0).toUpperCase() + tx.command.slice(1)} {getDeviceName(tx.deviceId)}
                   </p>
                   <p className="text-xs text-muted-foreground" data-testid={`text-transaction-time-${index}`}>
                     {formatTimeAgo(tx.createdAt)}
