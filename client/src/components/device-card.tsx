@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { type Device, type Session } from '@shared/schema';
 import React, { useState, useEffect } from 'react';
 
@@ -13,6 +14,14 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
   const activeSession = userSessions.find(s => s.deviceId === device.id);
   const hasAccess = !!activeSession;
   const [customFee, setCustomFee] = useState<string>('0.01'); // Default fee
+  const [isEditingFee, setIsEditingFee] = useState(false);
+  
+  // Load fee from device metadata on mount and when device changes
+  useEffect(() => {
+    if (device?.metadata?.price) {
+      setCustomFee(device.metadata.price as string);
+    }
+  }, [device?.metadata?.price]);
 
   const getDeviceIcon = () => {
     switch (device.type) {
@@ -169,6 +178,113 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           </p>
         </div>
       </div>
+
+      {/* Fee Customization for Gacha Devices */}
+      {device.type === 'gacha' && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+              {device.id === 'ESP32_002' ? 'Play Fee (Fixed)' : 'Play Fee Customization'}
+            </h4>
+            <span className="text-xs text-blue-600 dark:text-blue-400">
+              Current: ${parseFloat(customFee).toFixed(3)} USDC
+              {device.id === 'ESP32_002' && (
+                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  <i className="fas fa-lock mr-1"></i>
+                  Fixed
+                </span>
+              )}
+            </span>
+          </div>
+          
+          {device.id === 'ESP32_002' ? (
+            // Fixed fee display for ESP32_002
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
+                <span className="font-mono font-semibold text-gray-600 dark:text-gray-400 text-sm">
+                  ${parseFloat(customFee).toFixed(3)} USDC
+                </span>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-500">
+                  (Fixed Rate)
+                </span>
+              </div>
+              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                <i className="fas fa-info-circle mr-1"></i>
+                Cannot be changed
+              </div>
+            </div>
+          ) : isEditingFee ? (
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={customFee}
+                onChange={(e) => setCustomFee(e.target.value)}
+                min="0.001"
+                max="999"
+                step="0.001"
+                className="flex-1 text-sm"
+                placeholder="Enter fee in USDC"
+              />
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const fee = parseFloat(customFee);
+                  if (fee >= 0.001 && fee <= 999) {
+                    try {
+                      const response = await fetch(`/api/devices/${device.id}/fee`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fee, walletAddress: 'user' })
+                      });
+                      if (response.ok) {
+                        setIsEditingFee(false);
+                        console.log(`✅ Fee updated to ${fee} USDC for ${device.id}`);
+                      } else {
+                        console.error('Failed to update fee');
+                      }
+                    } catch (err) {
+                      console.error('Network error updating fee:', err);
+                    }
+                  } else {
+                    alert('Fee must be between 0.001 and 999 USDC');
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsEditingFee(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600">
+                <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-sm">
+                  ${parseFloat(customFee).toFixed(3)} USDC
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsEditingFee(true)}
+                className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400"
+              >
+                <i className="fas fa-edit mr-1"></i>
+                Edit Fee
+              </Button>
+            </div>
+          )}
+          
+          <div className="mt-2 text-xs text-blue-700 dark:text-blue-300">
+            💡 Higher fees may provide better rewards. Range: 0.001 - 999 USDC
+          </div>
+        </div>
+      )}
 
       {/* Control Buttons */}
       <div className="flex space-x-3">

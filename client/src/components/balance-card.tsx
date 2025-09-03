@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { walletService } from '@/lib/coinbase-wallet';
 import { balanceEvents } from '@/lib/balance-events';
 import { RefreshCw, Wallet, TrendingUp, TrendingDown, Network } from 'lucide-react';
-// Temporarily commented out to debug React Hook error
-// import { BasenameDisplay } from '@/components/basename-display';
+import { BasenameDisplay } from '@/components/basename-display';
 // import { BasenameSetup } from '@/components/basename-setup';
 // import { useBasename } from '@/hooks/use-basenames';
 
@@ -217,9 +216,11 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
         </CardTitle>
         <CardDescription className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium font-mono">
-              {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'No wallet'}
-            </span>
+            <BasenameDisplay 
+              address={walletAddress || ''} 
+              variant="inline"
+              className="text-sm font-medium"
+            />
             {walletInfo?.walletType && (
               <span className="text-xs text-muted-foreground">
                 ({walletInfo.walletType})

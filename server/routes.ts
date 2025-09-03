@@ -71,13 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!paymentHeader) {
         console.log(`💰 402 Payment Required for ${deviceId} - ${command}`);
         // Create 402 Payment Required response
-        const deviceFeeAmount = await getDeviceFee(deviceId);
-        const paymentInfo = {
-          amount: deviceFeeAmount.toString(),
-          currency: "USDC",
-          recipient: "0x1c7d4034fcad824d6167c45750ac75ac007ac238"
-        };
-        const response = X402Service.create402Response(deviceId, command, paymentInfo);
+        const response = await X402Service.create402Response(deviceId, command, 5);
         return res.status(402)
           .set(response.headers)
           .json(response.body);
@@ -226,6 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { deviceId } = req.params;
       const { fee, walletAddress } = req.body;
+
+      // Block fee changes for ESP32_002 (fixed fee device)
+      if (deviceId === 'ESP32_002') {
+        return res.status(403).json({
+          message: "Fee cannot be changed for this device - fixed at 0.005 USDC"
+        });
+      }
 
       // Validate fee range
       if (typeof fee !== 'number' || fee < 0.001 || fee > 999) {

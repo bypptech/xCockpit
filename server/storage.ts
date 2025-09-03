@@ -261,3 +261,14 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
+
+// Helper function to get device fee
+export async function getDeviceFee(deviceId: string): Promise<string | null> {
+  const device = await storage.getDevice(deviceId);
+  
+  if (device?.metadata?.price) {
+    return device.metadata.price as string;
+  }
+  
+  return null;
+}

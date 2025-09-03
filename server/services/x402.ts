@@ -3,6 +3,7 @@ import { orderManager, OrderValidation } from './order-manager';
 import { signatureVerifier, PaymentRequirements } from './signature-verifier';
 import { enhancedSignatureVerifier } from './enhanced-signature-verifier';
 import { jwsSignatureVerifier } from './jws-signature-verifier';
+import { getDeviceFee } from '../storage';
 
 export interface X402PaymentRequest {
   amount: string;
@@ -34,18 +35,28 @@ export class X402Service {
     this.blockchainVerifier = new BlockchainVerifier(network);
   }
   
-  static calculateDevicePrice(deviceId: string, command: string): string {
-    const devicePricing: Record<string, string> = {
-      'ESP32_001': '0.01',  // Gacha #001のfeeを$0.01 USDCに設定
-      'ESP32_002': '0.005', // Gacha #002のfeeを$0.005USDCに設定
+  static async calculateDevicePrice(deviceId: string, command: string): Promise<string> {
+    // Load persisted fees from storage
+    const fee = await getDeviceFee(deviceId);
+    
+    if (fee) {
+      console.log(`💰 Using persisted fee for ${deviceId}: ${fee} USDC`);
+      return fee;
+    }
+    
+    // Fallback to default pricing if no persisted fee
+    const defaultPricing: Record<string, string> = {
+      'ESP32_001': '0.5',   // Default Gacha #001 fee
+      'ESP32_002': '0.005', // Default Gacha #002 fee
     };
     
-    const basePrice = devicePricing[deviceId] || '0.01';
+    const basePrice = defaultPricing[deviceId] || '0.01';
+    console.log(`💰 Using default fee for ${deviceId}: ${basePrice} USDC`);
     return basePrice;
   }
 
-  static create402Response(deviceId: string, command: string, ttlMinutes: number = 5) {
-    const amount = this.calculateDevicePrice(deviceId, command);
+  static async create402Response(deviceId: string, command: string, ttlMinutes: number = 5) {
+    const amount = await this.calculateDevicePrice(deviceId, command);
     const recipient = process.env.PAYMENT_RECIPIENT || '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238';
     const network = process.env.NETWORK || 'sepolia';
     const isMainnet = network === 'mainnet';

@@ -69,6 +69,14 @@ export async function POST(
     const body = await request.json();
     const { fee, walletAddress } = body;
 
+    // Block fee changes for ESP32_002 (fixed fee device)
+    if (deviceId === 'ESP32_002') {
+      return NextResponse.json(
+        { error: 'Fee cannot be changed for this device - fixed at 0.005 USDC' },
+        { status: 403 }
+      );
+    }
+
     // Validate fee
     if (typeof fee !== 'number' || fee < 0.001 || fee > 999) {
       return NextResponse.json(
