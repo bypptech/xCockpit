@@ -300,13 +300,6 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             ${parseFloat(customFee).toFixed(3)} USDC
           </span>
         </Button>
-        <Button
-          variant="secondary"
-          className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-          data-testid={`button-device-history-${device.id}`}
-        >
-          <i className="fas fa-history"></i>
-        </Button>
       </div>
 
       {/* Session Timer (shown when active) */}
