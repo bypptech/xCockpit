@@ -214,21 +214,6 @@ export default function Dashboard() {
             {/* Balance Card - Always visible at the top */}
             <BalanceCard walletAddress={walletAddress} />
             
-            {/* Mini App welcome message */}
-            {isMiniApp && (
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🚀</span>
-                  <div>
-                    <h3 className="font-semibold text-primary">Welcome to xCockpit Mini App!</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {user ? `Hi ${user.displayName}! ` : ''}Control IoT devices with crypto payments
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {/* Device Cards */}
             {(devices as Device[]).map((device: Device) => (
               <DeviceCard
