@@ -15,7 +15,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
   const hasAccess = !!activeSession;
   const [customFee, setCustomFee] = useState<string>('0.01'); // Default fee
   const [isEditingFee, setIsEditingFee] = useState(false);
-  
+
   // Load fee from device metadata on mount and when device changes
   useEffect(() => {
     if (device?.metadata?.price) {
@@ -196,7 +196,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
               )}
             </span>
           </div>
-          
+
           {device.id === 'ESP32_002' ? (
             // Fixed fee display for ESP32_002
             <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
               </Button>
             </div>
           )}
-          
+
           {device.id !== 'ESP32_002' && (
             <div className="mt-2 text-xs text-blue-700 dark:text-blue-300">
               💡 Higher fees may provide better rewards. Range: 0.001 - 999 USDC
