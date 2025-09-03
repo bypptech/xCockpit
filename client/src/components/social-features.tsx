@@ -118,7 +118,7 @@ Join me! 🚀`;
             <p className="text-xs text-muted-foreground">Interactions</p>
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-bold text-primary">{parseFloat(totalAmount).toFixed(2)}</p>
+            <p className="text-2xl font-bold text-primary">{parseFloat(totalAmount).toFixed(4)}</p>
             <p className="text-xs text-muted-foreground">USDC Spent</p>
           </div>
         </div>
