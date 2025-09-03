@@ -192,15 +192,6 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
                 'Play Fee Customization'
               )}
             </h4>
-            <span className="text-xs text-blue-600 dark:text-blue-400">
-              Current: ${parseFloat(customFee).toFixed(3)} USDC
-              {device.id === 'ESP32_002' && (
-                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                  <i className="fas fa-lock mr-1"></i>
-                  Fixed
-                </span>
-              )}
-            </span>
           </div>
 
           {device.id === 'ESP32_002' ? (
