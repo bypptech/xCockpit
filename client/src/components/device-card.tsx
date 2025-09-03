@@ -280,9 +280,11 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             </div>
           )}
           
-          <div className="mt-2 text-xs text-blue-700 dark:text-blue-300">
-            💡 Higher fees may provide better rewards. Range: 0.001 - 999 USDC
-          </div>
+          {device.id !== 'ESP32_002' && (
+            <div className="mt-2 text-xs text-blue-700 dark:text-blue-300">
+              💡 Higher fees may provide better rewards. Range: 0.001 - 999 USDC
+            </div>
+          )}
         </div>
       )}
 
