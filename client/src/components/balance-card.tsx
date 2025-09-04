@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BasenameDisplay } from '@/components/basename-display';
+import { Wallet, RefreshCw, TrendingUp, TrendingDown, Network } from 'lucide-react';
 import { walletService } from '@/lib/coinbase-wallet';
 import { balanceEvents } from '@/lib/balance-events';
-import { RefreshCw, Wallet, TrendingUp, TrendingDown, Network } from 'lucide-react';
-import { BasenameDisplay } from '@/components/basename-display';
-// import { BasenameSetup } from '@/components/basename-setup';
-// import { useBasename } from '@/hooks/use-basenames';
 
 interface BalanceCardProps {
   walletAddress: string | null;
@@ -114,7 +112,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const handleNetworkSwitch = async (network: 'base-sepolia' | 'sepolia-ethereum') => {
+  const handleNetworkSwitch = async (network: 'base-mainnet' | 'base-sepolia' | 'sepolia-ethereum') => {
     setIsSwitchingNetwork(true);
     try {
       await walletService.switchNetwork(network);
@@ -147,22 +145,20 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
   };
 
   const getNetworkInfo = () => {
-    if (!networkInfo?.chainId) return { name: 'Unknown', chainId: 'Unknown', shortName: 'Unknown' };
+    if (!networkInfo) return { name: 'Unknown', chainId: '0', shortName: 'Unknown' };
 
-    const chainMap: Record<string, { name: string; shortName: string; chainId: string }> = {
-      '0x14a34': { name: 'Base Sepolia', shortName: 'Base Sep', chainId: '84532' },
-      '0x14A34': { name: 'Base Sepolia', shortName: 'Base Sep', chainId: '84532' },
-      '0xaa36a7': { name: 'Sepolia Ethereum', shortName: 'ETH Sep', chainId: '11155111' },
-      '0xAA36A7': { name: 'Sepolia Ethereum', shortName: 'ETH Sep', chainId: '11155111' },
-      '0x2105': { name: 'Base Mainnet', shortName: 'Base', chainId: '8453' },
-      '0x1': { name: 'Ethereum Mainnet', shortName: 'Ethereum', chainId: '1' },
-    };
-
-    return chainMap[networkInfo.chainId] || { 
-      name: networkInfo.name, 
-      shortName: networkInfo.name.slice(0, 8), 
-      chainId: networkInfo.chainId 
-    };
+    switch (networkInfo.chainId) {
+      case '8453':
+        return { name: 'Base', chainId: '8453', shortName: 'Base' };
+      case '84532':
+        return { name: 'Base Sepolia', chainId: '84532', shortName: 'Base Sepolia' };
+      case '11155111':
+        return { name: 'Sepolia', chainId: '11155111', shortName: 'ETH Sepolia' };
+      case '1':
+        return { name: 'Ethereum Mainnet', chainId: '1', shortName: 'Mainnet' };
+      default:
+        return { name: networkInfo.name || 'Unknown', chainId: networkInfo.chainId, shortName: 'Unknown' };
+    }
   };
 
   if (!walletAddress) {
@@ -205,29 +201,55 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               </span>
             )}
           </div>
-          <button
-            onClick={handleRefreshBalance}
-            className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
-            title="Refresh balances"
-            disabled={isRefreshing}
-          >
-            <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefreshBalance}
+              className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
+              title="Refresh balances"
+              disabled={isRefreshing}
+            >
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </CardTitle>
         <CardDescription className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BasenameDisplay 
-              address={walletAddress || ''} 
-              variant="inline"
-              className="text-sm font-medium"
-            />
-            {walletInfo?.walletType && (
-              <span className="text-xs text-muted-foreground">
-                ({walletInfo.walletType})
-              </span>
-            )}
+          <span>{currentNetwork.name} • Updated {formatTimeAgo(lastUpdated)}</span>
+          <div className="flex items-center gap-1">
+            <Network className="h-3 w-3" />
+            <span className="text-xs">Network</span>
           </div>
         </CardDescription>
+
+        {/* Network Switching Buttons */}
+        <div className="flex gap-2 mt-3">
+          <Button
+            variant={currentNetwork.chainId === '8453' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleNetworkSwitch('base-mainnet')}
+            disabled={isSwitchingNetwork}
+            className="text-xs h-7 flex-1"
+          >
+            Base
+          </Button>
+          <Button
+            variant={currentNetwork.chainId === '84532' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleNetworkSwitch('base-sepolia')}
+            disabled={isSwitchingNetwork}
+            className="text-xs h-7 flex-1"
+          >
+            Base Sepolia
+          </Button>
+          <Button
+            variant={currentNetwork.chainId === '11155111' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleNetworkSwitch('sepolia-ethereum')}
+            disabled={isSwitchingNetwork}
+            className="text-xs h-7 flex-1"
+          >
+            ETH Sepolia
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
