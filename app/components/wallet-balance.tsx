@@ -355,10 +355,20 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
           </div>
         </div>
 
-        {/* 最終更新時刻 */}
+        {/* ネットワーク情報と最終更新時刻 */}
         {balance && (
-          <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-            Updated {formatLastUpdated(balance.lastUpdated)}
+          <div className="text-xs text-muted-foreground text-center pt-2 border-t space-y-1">
+            <div className="flex items-center justify-center gap-2">
+              <span>Base Sepolia</span>
+              {basename && (
+                <>
+                  <span>•</span>
+                  <span className="text-blue-600 font-medium">{basename}</span>
+                </>
+              )}
+              <span>•</span>
+              <span>Updated {formatLastUpdated(balance.lastUpdated)}</span>
+            </div>
           </div>
         )}
       </CardContent>
