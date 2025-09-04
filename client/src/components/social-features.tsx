@@ -23,11 +23,11 @@ export function SocialFeatures({
 
   const handleShareProgress = async () => {
     if (!walletAddress) return;
-    
+
     setIsSharing(true);
     try {
       const text = `🎮 Just controlled IoT devices with crypto payments on xCockpit! 
-      
+
 💰 ${totalPayments} payments made
 🎯 ${deviceInteractions} device interactions
 ⚡ Powered by Base + USDC
@@ -35,7 +35,7 @@ export function SocialFeatures({
 Try it yourself! 🚀`;
 
       await shareCast(text, [window.location.origin]);
-      
+
     } catch (error) {
       console.error('Failed to share:', error);
     } finally {
@@ -47,7 +47,7 @@ Try it yourself! 🚀`;
     setIsSharing(true);
     try {
       const text = `🏆 Achievement unlocked: ${achievement}
-      
+
 🎮 Playing xCockpit - Web3 IoT Control Dashboard
 💳 Making payments with USDC on Base
 🤖 Controlling real devices with crypto
@@ -55,7 +55,7 @@ Try it yourself! 🚀`;
 Join me! 🚀`;
 
       await shareCast(text, [window.location.origin]);
-      
+
     } catch (error) {
       console.error('Failed to share achievement:', error);
     } finally {
@@ -80,7 +80,7 @@ Join me! 🚀`;
           {isMiniApp && <Badge variant="secondary">Mini App</Badge>}
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* User Profile Display */}
         {user && (
@@ -108,17 +108,13 @@ Join me! 🚀`;
         )}
 
         {/* User Stats */}
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-2 gap-4 text-center">
           <div className="space-y-1">
             <p className="text-2xl font-bold text-primary">{totalPayments}</p>
             <p className="text-xs text-muted-foreground">Payments</p>
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-bold text-primary">{deviceInteractions}</p>
-            <p className="text-xs text-muted-foreground">Interactions</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-2xl font-bold text-primary">{parseFloat(totalAmount || "0").toFixed(4)}</p>
+            <p className="text-2xl font-bold text-primary">{Number(totalAmount || 0).toFixed(4)}</p>
             <p className="text-xs text-muted-foreground">USDC Spent</p>
           </div>
         </div>
@@ -159,7 +155,7 @@ Join me! 🚀`;
             <Share2 className="h-4 w-4 mr-2" />
             {isSharing ? 'Sharing...' : 'Share Progress'}
           </Button>
-          
+
           {isMiniApp && (
             <p className="text-xs text-muted-foreground text-center">
               Your activity will appear in your social feed!
