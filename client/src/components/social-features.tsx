@@ -112,7 +112,7 @@ Join me! 🚀`;
           </div>
           <div className="space-y-1">
             <p className="text-2xl font-bold text-primary">{Number(totalAmount || 0).toFixed(4)}</p>
-            <p className="text-xs text-muted-foreground">USDC Spent</p>
+            <p className="text-xs text-muted-foreground">spent</p>
           </div>
         </div>
 
