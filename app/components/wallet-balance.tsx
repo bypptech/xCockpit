@@ -55,7 +55,7 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
     try {
       // USDC残高を取得
       const usdcBalance = await walletService.getUSDCBalance(walletAddress);
-      
+
       // ETH残高を取得  
       const ethBalance = await walletService.getETHBalance(walletAddress);
 
@@ -111,7 +111,7 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
 
   const handleCopyAddress = async () => {
     if (!walletAddress) return;
-    
+
     try {
       await navigator.clipboard.writeText(walletAddress);
       toast({
@@ -183,7 +183,7 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);
-    
+
     if (diffSeconds < 60) {
       return `${diffSeconds}s ago`;
     } else if (diffSeconds < 3600) {
@@ -355,16 +355,20 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
           </div>
         </div>
 
-        {/* Basenameまたはアドレス表示 */}
-        {walletAddress && (
-          <div className="text-xs text-center pt-2 border-t">
-            {basename ? (
-              <span className="text-blue-600 font-medium">{basename}</span>
-            ) : (
-              <span className="text-muted-foreground font-mono">
-                {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
-              </span>
-            )}
+        {/* ネットワーク情報と最終更新時刻 */}
+        {balance && (
+          <div className="text-xs text-muted-foreground text-center pt-2 border-t space-y-1">
+            <div className="flex items-center justify-center gap-2">
+              <span>Base Sepolia</span>
+              {basename && (
+                <>
+                  <span>•</span>
+                  <span className="text-blue-600 font-medium">{basename}</span>
+                </>
+              )}
+              <span>•</span>
+              <span>Updated {formatLastUpdated(balance.lastUpdated)}</span>
+            </div>
           </div>
         )}
       </CardContent>
