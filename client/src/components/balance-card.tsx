@@ -304,21 +304,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
             </div>
           </div>
 
-          {/* Network Info & Controls */}
-          <div className="pt-3 border-t border-border/50 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-muted-foreground">
-                  Connected to {currentNetwork.name}
-                </span>
-              </div>
-              <span className="text-xs font-medium text-primary">
-                ID: {currentNetwork.chainId}
-              </span>
-            </div>
           </div>
-        </div>
       </CardContent>
     </Card>
   );
