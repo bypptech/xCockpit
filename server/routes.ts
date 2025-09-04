@@ -5,6 +5,7 @@ import { X402Service } from "./services/x402";
 import { PaymentService } from "./services/payment";
 import { WebSocketService } from "./services/websocket";
 import { insertUserSchema, insertPaymentSchema } from "@shared/schema";
+import frameRoutes from "./routes/frame";
 
 let wsService: WebSocketService;
 

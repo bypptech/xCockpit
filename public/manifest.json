@@ -1,0 +1,50 @@
+{
+  "name": "Nagesen Gacha Live",
+  "description": "Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.",
+  "url": "https://202509vibecodingminihackerson.bypp.tech/",
+  "icon": "/icon.png",
+  "version": "1.0.0",
+  "type": "mini-app",
+  "author": {
+    "name": "xCockpit Team",
+    "url": "https://202509vibecodingminihackerson.bypp.tech/"
+  },
+  "permissions": [
+    "wallet",
+    "identity"
+  ],
+  "features": [
+    "payments",
+    "live-streaming",
+    "iot-control"
+  ],
+  "payment": {
+    "currency": "USDC",
+    "network": "base",
+    "minAmount": "0.002",
+    "recipient": "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238"
+  },
+  "farcaster": {
+    "frame": {
+      "enabled": true,
+      "version": "vNext",
+      "buttons": [
+        {
+          "label": "💰 Tip & Trigger Gacha",
+          "action": "post",
+          "target": "/api/frame"
+        },
+        {
+          "label": "📊 View Stats",
+          "action": "post",
+          "target": "/api/frame/stats"
+        },
+        {
+          "label": "🎬 Watch Live",
+          "action": "link",
+          "target": "https://202509vibecodingminihackerson.bypp.tech/"
+        }
+      ]
+    }
+  }
+}
