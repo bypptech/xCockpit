@@ -37,6 +37,17 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
   const { toast } = useToast();
   const { basename, ownedBasename, hasReverseRecord, loading: basenameLoading } = useBasename(walletAddress);
 
+  // デバッグ用ログ
+  useEffect(() => {
+    console.log('🔍 WalletBalance - Basename data:', { 
+      basename, 
+      ownedBasename, 
+      hasReverseRecord, 
+      basenameLoading, 
+      walletAddress 
+    });
+  }, [basename, ownedBasename, hasReverseRecord, basenameLoading, walletAddress]);
+
   const loadNetworkInfo = async () => {
     if (!walletAddress) return;
 
@@ -358,9 +369,9 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
         {/* ネットワーク情報と最終更新時刻 */}
         {balance && (
           <div className="text-xs text-muted-foreground text-center pt-2 border-t space-y-1">
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
               <span>Base Sepolia</span>
-              {basename && (
+              {basename && !basenameLoading && (
                 <>
                   <span>•</span>
                   <span className="text-blue-600 font-medium">{basename}</span>
