@@ -32,7 +32,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
   const ownedBasename = null;
   const hasReverseRecord = false;
   const basenameLoading = false;
-  
+
   // const { 
   //   basename, 
   //   ownedBasename, 
@@ -55,7 +55,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
       const interval = setInterval(() => {
         loadBalances();
       }, 30000);
-      
+
       // Listen for balance update events (e.g., after payment)
       const unsubscribe = balanceEvents.onBalanceUpdate(() => {
         console.log('🔄 Balance update event triggered - refreshing balances...');
@@ -66,7 +66,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
         setTimeout(loadBalances, 6000);   // 6 seconds
         setTimeout(loadBalances, 12000);  // 12 seconds
       });
-      
+
       return () => {
         clearInterval(interval);
         unsubscribe();
@@ -76,7 +76,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
 
   const loadBalances = async () => {
     if (!walletAddress) return;
-    
+
     try {
       const [usdc, eth, network, wallet] = await Promise.all([
         walletService.getUSDCBalance(walletAddress),
@@ -84,14 +84,14 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
         walletService.getCurrentNetwork(),
         walletService.getWalletInfo()
       ]);
-      
+
       setPreviousUsdcBalance(usdcBalance);
       setUsdcBalance(usdc);
       setEthBalance(eth);
       setNetworkInfo(network);
       setWalletInfo(wallet);
       setLastUpdated(new Date());
-      
+
       console.log('💰 Balance Update:', {
         walletAddress,
         usdcBalance: usdc,
@@ -148,7 +148,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
 
   const getNetworkInfo = () => {
     if (!networkInfo?.chainId) return { name: 'Unknown', chainId: 'Unknown', shortName: 'Unknown' };
-    
+
     const chainMap: Record<string, { name: string; shortName: string; chainId: string }> = {
       '0x14a34': { name: 'Base Sepolia', shortName: 'Base Sep', chainId: '84532' },
       '0x14A34': { name: 'Base Sepolia', shortName: 'Base Sep', chainId: '84532' },
@@ -157,7 +157,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
       '0x2105': { name: 'Base Mainnet', shortName: 'Base', chainId: '8453' },
       '0x1': { name: 'Ethereum Mainnet', shortName: 'Ethereum', chainId: '1' },
     };
-    
+
     return chainMap[networkInfo.chainId] || { 
       name: networkInfo.name, 
       shortName: networkInfo.name.slice(0, 8), 
@@ -317,140 +317,6 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
                 ID: {currentNetwork.chainId}
               </span>
             </div>
-            
-            {/* Network Switching */}
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={currentNetwork.name === 'Base Sepolia' ? 'default' : 'outline'}
-                onClick={() => handleNetworkSwitch('base-sepolia')}
-                disabled={isSwitchingNetwork || currentNetwork.name === 'Base Sepolia'}
-                className="text-xs h-7 px-2"
-              >
-                <Network size={12} className="mr-1" />
-                Base Sepolia
-                <span className="ml-1 text-[10px] opacity-70">84532</span>
-              </Button>
-              <Button
-                size="sm"
-                variant={currentNetwork.name === 'Sepolia Ethereum' ? 'default' : 'outline'}
-                onClick={() => handleNetworkSwitch('sepolia-ethereum')}
-                disabled={isSwitchingNetwork || currentNetwork.name === 'Sepolia Ethereum'}
-                className="text-xs h-7 px-2"
-              >
-                <Network size={12} className="mr-1" />
-                Sepolia ETH
-                <span className="ml-1 text-[10px] opacity-70">11155111</span>
-              </Button>
-            </div>
-            
-            {/* Wallet Info */}
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div className="flex items-center justify-between">
-                <span>Wallet Type:</span>
-                <span className="font-medium">
-                  {walletInfo?.walletType || 'Loading...'}
-                  {walletInfo?.isSmartWallet && ' 🔮'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Address:</span>
-                <span className="font-mono text-[10px]">
-                  {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'No wallet'}
-                </span>
-              </div>
-              {basename && (
-                <div className="flex items-center justify-between">
-                  <span>Basename:</span>
-                  <span className="text-blue-500 font-medium text-[10px]">
-                    {basename}
-                  </span>
-                </div>
-              )}
-              {walletInfo?.isSmartWallet && (
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded text-[10px] text-purple-700 dark:text-purple-300">
-                  ✨ Smart Wallet detected - Enhanced security features available
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
-                <div>
-                  <span className="opacity-50">Network:</span>
-                  <span className="ml-1 font-medium">{currentNetwork.shortName}</span>
-                </div>
-                <div>
-                  <span className="opacity-50">Chain:</span>
-                  <span className="ml-1 font-medium">{currentNetwork.chainId}</span>
-                </div>
-                <div>
-                  <span className="opacity-50">Type:</span>
-                  <span className="ml-1 font-medium">
-                    {walletInfo?.isSmartWallet ? 'Smart' : 'EOA'}
-                  </span>
-                </div>
-                <div>
-                  <span className="opacity-50">Status:</span>
-                  <span className="ml-1 font-medium text-green-500">Active</span>
-                </div>
-              </div>
-              <p className="text-[10px] opacity-50">Check console for detailed contract info</p>
-            </div>
-            
-            {/* Smart Wallet Debug Panel */}
-            <div className="bg-muted/30 p-3 rounded-lg space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium">Debug Panel:</span>
-                <button
-                  onClick={() => {
-                    console.log('🔍 Smart Wallet Debug Info:', {
-                      walletInfo,
-                      networkInfo,
-                      balances: { usdc: usdcBalance, eth: ethBalance },
-                      address: walletAddress
-                    });
-                  }}
-                  className="text-primary hover:underline"
-                >
-                  Log Details
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-1 text-[11px] text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Smart Wallet:</span>
-                  <span className={walletInfo?.isSmartWallet ? 'text-purple-500' : 'text-gray-500'}>
-                    {walletInfo?.isSmartWallet ? 'Yes 🔮' : 'No (EOA)'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Balance Status:</span>
-                  <span className={parseFloat(usdcBalance) > 0 ? 'text-green-500' : 'text-red-500'}>
-                    {parseFloat(usdcBalance) > 0 ? 'Has USDC ✅' : 'No USDC ❌'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Network Ready:</span>
-                  <span className="text-green-500">Connected ✅</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Basename Setup UI - Temporarily commented out to debug React Hook error */}
-            {/* 
-            {walletAddress && (
-              <BasenameSetup
-                address={walletAddress}
-                ownedBasename={ownedBasename}
-                hasReverseRecord={hasReverseRecord}
-                onBasenameSet={(basename) => {
-                  console.log('🎉 Basename set as primary:', basename);
-                  // Refresh the basename hook to get updated data
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 2000);
-                }}
-                className="mt-4"
-              />
-            )}
-            */}
           </div>
         </div>
       </CardContent>
