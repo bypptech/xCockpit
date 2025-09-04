@@ -7,29 +7,82 @@ class WalletService {
   private sdk: CoinbaseWalletSDK;
   private provider: any;
   private accounts: string[] = [];
+  private isWebView: boolean;
+  private environmentInfo: {
+    isWebView: boolean;
+    isMobile: boolean;
+    userAgent: string;
+  };
 
   constructor() {
-    this.sdk = new CoinbaseWalletSDK({
+    // Detect environment
+    this.isWebView = /wv|WebView/i.test(navigator.userAgent);
+    this.environmentInfo = {
+      isWebView: this.isWebView,
+      isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+      userAgent: navigator.userAgent
+    };
+
+    console.log('🔍 Wallet SDK Environment Detection:', this.environmentInfo);
+
+    // Initialize SDK with environment-specific options
+    const sdkOptions: any = {
       appName: APP_NAME,
       appLogoUrl: APP_LOGO_URL
-    });
+    };
 
+    // Add WebView-specific configurations
+    if (this.isWebView) {
+      console.log('⚠️  WebView environment detected - adjusting SDK configuration');
+      // In WebView, prefer mobile linking over QR codes
+      sdkOptions.enableMobileWalletLink = true;
+    }
+
+    this.sdk = new CoinbaseWalletSDK(sdkOptions);
     this.provider = this.sdk.makeWeb3Provider();
   }
 
   async connect(): Promise<string[]> {
     try {
-      // Request account access
+      console.log('🔗 Initiating wallet connection in', this.isWebView ? 'WebView' : 'Browser', 'environment');
+
+      // WebView environment warnings
+      if (this.isWebView) {
+        console.warn('⚠️  WebView detected: Some wallet features may be limited');
+        console.log('💡 If connection fails, try opening this app in your default browser');
+      }
+
+      // Request account access with environment-specific error handling
       this.accounts = await this.provider.request({
         method: 'eth_requestAccounts'
+      });
+
+      console.log('✅ Wallet connected successfully:', {
+        accountCount: this.accounts.length,
+        primaryAccount: this.accounts[0],
+        environment: this.environmentInfo
       });
 
       // Switch to Base Sepolia if not already connected
       await this.switchToBaseSepolia();
 
       return this.accounts;
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to connect wallet:', error);
+      
+      // Enhanced error handling for WebView environments
+      if (this.isWebView && error.code === 4001) {
+        const webViewError = new Error('Wallet connection was rejected. In mobile apps, you may need to open this in your default browser for full wallet functionality.');
+        webViewError.name = 'WebViewConnectionError';
+        throw webViewError;
+      }
+      
+      if (this.isWebView && (error.code === -32002 || error.message?.includes('request'))) {
+        const webViewError = new Error('Wallet connection timed out in WebView environment. Try opening this app in your default browser.');
+        webViewError.name = 'WebViewTimeoutError';
+        throw webViewError;
+      }
+
       throw error;
     }
   }
@@ -381,6 +434,14 @@ class WalletService {
 
   isConnected(): boolean {
     return this.accounts.length > 0;
+  }
+
+  getEnvironmentInfo() {
+    return {
+      ...this.environmentInfo,
+      hasLimitations: this.isWebView,
+      recommendedAction: this.isWebView ? 'Open in default browser for full functionality' : 'Full functionality available'
+    };
   }
 
   onAccountsChanged(callback: (accounts: string[]) => void): void {

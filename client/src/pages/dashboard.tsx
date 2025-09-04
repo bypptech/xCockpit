@@ -91,8 +91,15 @@ export default function Dashboard() {
       if (accounts.length > 0) {
         setWalletAddress(accounts[0]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to connect wallet:', error);
+      
+      // Show user-friendly error messages based on environment
+      if (error.name === 'WebViewConnectionError' || error.name === 'WebViewTimeoutError') {
+        alert(`⚠️ ウォレット接続エラー\n\n${error.message}\n\nモバイルアプリ内では一部機能が制限される場合があります。`);
+      } else {
+        alert(`ウォレット接続に失敗しました。\n\nエラー: ${error.message || 'Unknown error'}\n\n再試行してください。`);
+      }
     }
   };
 
