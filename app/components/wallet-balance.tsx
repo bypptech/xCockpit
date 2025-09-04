@@ -377,6 +377,12 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
                   <span className="text-blue-600 font-medium">{basename}</span>
                 </>
               )}
+              {basenameLoading && (
+                <>
+                  <span>•</span>
+                  <span className="text-gray-400 italic">Loading basename...</span>
+                </>
+              )}
               <span>•</span>
               <span>Updated {formatLastUpdated(balance.lastUpdated)}</span>
             </div>
