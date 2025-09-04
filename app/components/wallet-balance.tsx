@@ -28,7 +28,7 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
   const [loading, setLoading] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
   const { toast } = useToast();
-  const { basename, loading: basenameLoading } = useBasename(walletAddress);
+  const { basename, ownedBasename, hasReverseRecord, loading: basenameLoading } = useBasename(walletAddress);
 
   const loadBalance = async () => {
     if (!walletAddress) return;
@@ -186,12 +186,31 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
               <Copy className="h-3 w-3" />
             </Button>
           </div>
-          <BasenameDisplay 
-            address={walletAddress} 
-            variant="default"
-            showCopyButton={false}
-            showExternalLink={true}
-          />
+          <div className="min-h-[40px] flex items-center">
+            <BasenameDisplay 
+              address={walletAddress} 
+              variant="default"
+              showCopyButton={false}
+              showExternalLink={true}
+              className="w-full"
+            />
+          </div>
+          {/* Basename情報表示 */}
+          {basename && (
+            <div className="text-xs text-green-600 bg-green-50 p-2 rounded border">
+              ✅ Basename: {basename}
+            </div>
+          )}
+          {!basename && !basenameLoading && walletAddress && (
+            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border">
+              💡 No Basename found. <a href="https://www.base.org/names" target="_blank" className="underline">Get one here</a>
+            </div>
+          )}
+          {basenameLoading && (
+            <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border">
+              🔍 Looking up Basename...
+            </div>
+          )}
         </div>
 
         {/* 残高表示 */}
