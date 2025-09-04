@@ -2,22 +2,29 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const manifest = {
-    name: "xCockpit",
-    description: "Web3 IoT Control Dashboard",
-    icon: "🚀",
+    name: "Nagesen Gacha Live",
+    description: "Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.",
+    icon: "🎰",
     version: "1.0.0",
-    url: process.env.NODE_ENV === 'production' 
-      ? "https://xcockpit.replit.app" 
-      : "http://localhost:3000",
+    url: "https://202509vibecodingminihackerson.bypp.tech",
     frame: {
       version: "vNext",
-      image: "/frame-image.png",
+      image: "https://202509vibecodingminihackerson.bypp.tech/api/frame/image",
       buttons: [
         {
-          text: "🚀 Launch xCockpit",
+          text: "💰 Tip & Trigger Gacha",
+          action: "post"
+        },
+        {
+          text: "📊 View Stats",
+          action: "post"
+        },
+        {
+          text: "🎬 Watch Live",
           action: "link"
         }
-      ]
+      ],
+      postUrl: "https://202509vibecodingminihackerson.bypp.tech/api/frame"
     }
   };
   
