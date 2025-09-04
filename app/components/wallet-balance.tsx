@@ -23,12 +23,30 @@ interface BalanceInfo {
   lastUpdated: Date;
 }
 
+interface NetworkInfo {
+  chainId: string;
+  name: string;
+}
+
 export function WalletBalance({ walletAddress, className = '' }: WalletBalanceProps) {
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
+  const [networkInfo, setNetworkInfo] = useState<NetworkInfo | null>(null);
+  const [switching, setSwitching] = useState(false);
   const { toast } = useToast();
   const { basename, ownedBasename, hasReverseRecord, loading: basenameLoading } = useBasename(walletAddress);
+
+  const loadNetworkInfo = async () => {
+    if (!walletAddress) return;
+
+    try {
+      const info = await walletService.getCurrentNetwork();
+      setNetworkInfo(info);
+    } catch (error) {
+      console.error('Failed to load network info:', error);
+    }
+  };
 
   const loadBalance = async () => {
     if (!walletAddress) return;
@@ -62,8 +80,10 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
   useEffect(() => {
     if (walletAddress) {
       loadBalance();
+      loadNetworkInfo();
     } else {
       setBalance(null);
+      setNetworkInfo(null);
     }
   }, [walletAddress]);
 
@@ -113,6 +133,50 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
 
   const toggleBalanceVisibility = () => {
     setShowBalance(!showBalance);
+  };
+
+  const switchToBaseSepolia = async () => {
+    setSwitching(true);
+    try {
+      await walletService.switchNetwork('base-sepolia');
+      toast({
+        title: 'Network switched!',
+        description: 'Successfully switched to Base Sepolia',
+      });
+      await loadNetworkInfo();
+      await loadBalance();
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+      toast({
+        title: 'Failed to switch network',
+        description: 'Could not switch to Base Sepolia',
+        variant: 'destructive',
+      });
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const switchToSepoliaEthereum = async () => {
+    setSwitching(true);
+    try {
+      await walletService.switchNetwork('sepolia-ethereum');
+      toast({
+        title: 'Network switched!',
+        description: 'Successfully switched to Sepolia Ethereum',
+      });
+      await loadNetworkInfo();
+      await loadBalance();
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+      toast({
+        title: 'Failed to switch network',
+        description: 'Could not switch to Sepolia Ethereum',
+        variant: 'destructive',
+      });
+    } finally {
+      setSwitching(false);
+    }
   };
 
   const formatLastUpdated = (date: Date) => {
@@ -251,6 +315,43 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
                 <div className="font-mono">****</div>
               )}
             </div>
+          </div>
+
+          {/* Chain ID表示 */}
+          <div className="flex items-center justify-between pt-2 border-t">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">Chain ID</Badge>
+            </div>
+            <div className="text-right">
+              <div className="font-mono text-sm font-medium">
+                {networkInfo?.chainId ? parseInt(networkInfo.chainId, 16) : 'Unknown'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ネットワーク切り替えボタン */}
+        <div className="pt-3 border-t">
+          <div className="text-xs text-muted-foreground mb-2">Switch Network</div>
+          <div className="flex gap-2">
+            <Button
+              onClick={switchToBaseSepolia}
+              disabled={switching}
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+            >
+              {switching ? 'Switching...' : 'Base Sepolia'}
+            </Button>
+            <Button
+              onClick={switchToSepoliaEthereum}
+              disabled={switching}
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+            >
+              {switching ? 'Switching...' : 'ETH Sepolia'}
+            </Button>
           </div>
         </div>
 
