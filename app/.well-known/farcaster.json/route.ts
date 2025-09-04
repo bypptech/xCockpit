@@ -5,7 +5,7 @@ export async function GET() {
     name: "Nagesen Gacha Live",
     description: "Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.",
     icon: "🎰",
-    version: "1.0.0",
+    version: "1.0.1",
     url: "https://202509vibecodingminihackerson.bypp.tech",
     frame: {
       version: "vNext",
