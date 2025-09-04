@@ -41,11 +41,11 @@ export default function WalletConnection({ walletAddress, onConnect, onDisconnec
       <Button 
         onClick={handleConnect}
         disabled={isLoading}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto"
         data-testid="button-connect-wallet"
       >
-        <i className="fas fa-wallet"></i>
-        {isLoading ? 'Connecting...' : 'Connect Wallet'}
+        <i className="fas fa-wallet mr-2"></i>
+        {isLoading ? '接続中...' : 'Connect Wallet'}
       </Button>
     );
   }

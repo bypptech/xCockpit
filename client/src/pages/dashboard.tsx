@@ -97,6 +97,10 @@ export default function Dashboard() {
       // Show user-friendly error messages based on environment
       if (error.name === 'WebViewConnectionError' || error.name === 'WebViewTimeoutError') {
         alert(`⚠️ ウォレット接続エラー\n\n${error.message}\n\nモバイルアプリ内では一部機能が制限される場合があります。`);
+      } else if (error.name === 'MobileConnectionError') {
+        alert(`📱 モバイル接続エラー\n\n${error.message}\n\nCoinbase Walletアプリをインストールするか、デフォルトブラウザで開いてください。`);
+      } else if (error.name === 'MobileNetworkError') {
+        alert(`🌐 ネットワークエラー\n\n${error.message}\n\n接続環境を確認してください。`);
       } else {
         alert(`ウォレット接続に失敗しました。\n\nエラー: ${error.message || 'Unknown error'}\n\n再試行してください。`);
       }

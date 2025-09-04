@@ -36,6 +36,17 @@ class WalletService {
       console.log('⚠️  WebView environment detected - adjusting SDK configuration');
       // In WebView, prefer mobile linking over QR codes
       sdkOptions.enableMobileWalletLink = true;
+      // Additional mobile optimizations
+      sdkOptions.darkMode = false; // Ensure consistent theme
+      sdkOptions.headlessMode = false; // Ensure UI is shown
+    }
+
+    // Add mobile-specific optimizations regardless of WebView
+    if (this.environmentInfo.isMobile) {
+      console.log('📱 Mobile environment detected - optimizing for mobile');
+      sdkOptions.enableMobileWalletLink = true;
+      // Ensure mobile wallet deep linking works
+      sdkOptions.linkAPIUrl = 'https://www.walletlink.org';
     }
 
     this.sdk = new CoinbaseWalletSDK(sdkOptions);
@@ -50,6 +61,14 @@ class WalletService {
       if (this.isWebView) {
         console.warn('⚠️  WebView detected: Some wallet features may be limited');
         console.log('💡 If connection fails, try opening this app in your default browser');
+      }
+
+      // Mobile-specific optimizations
+      if (this.environmentInfo.isMobile) {
+        console.log('📱 Optimizing connection flow for mobile environment');
+        
+        // Add a small delay to ensure proper initialization
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       // Request account access with environment-specific error handling
@@ -70,17 +89,31 @@ class WalletService {
     } catch (error: any) {
       console.error('❌ Failed to connect wallet:', error);
       
-      // Enhanced error handling for WebView environments
+      // Enhanced error handling for WebView and mobile environments
       if (this.isWebView && error.code === 4001) {
-        const webViewError = new Error('Wallet connection was rejected. In mobile apps, you may need to open this in your default browser for full wallet functionality.');
+        const webViewError = new Error('ウォレット接続が拒否されました。モバイルアプリ内では、デフォルトブラウザで開くことをお試しください。');
         webViewError.name = 'WebViewConnectionError';
         throw webViewError;
       }
       
       if (this.isWebView && (error.code === -32002 || error.message?.includes('request'))) {
-        const webViewError = new Error('Wallet connection timed out in WebView environment. Try opening this app in your default browser.');
+        const webViewError = new Error('WebView環境でのウォレット接続がタイムアウトしました。デフォルトブラウザで開いてお試しください。');
         webViewError.name = 'WebViewTimeoutError';
         throw webViewError;
+      }
+
+      // Mobile-specific error handling
+      if (this.environmentInfo.isMobile && error.code === 4001) {
+        const mobileError = new Error('ウォレット接続が拒否されました。Coinbase Walletアプリがインストールされているか確認してください。');
+        mobileError.name = 'MobileConnectionError';
+        throw mobileError;
+      }
+
+      // Network connection issues common on mobile
+      if (this.environmentInfo.isMobile && (error.code === -32002 || error.message?.includes('timeout'))) {
+        const networkError = new Error('ネットワーク接続の問題が発生しました。Wi-Fi接続を確認して再試行してください。');
+        networkError.name = 'MobileNetworkError';
+        throw networkError;
       }
 
       throw error;
