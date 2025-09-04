@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -366,26 +366,18 @@ export function WalletBalance({ walletAddress, className = '' }: WalletBalancePr
           </div>
         </div>
 
-        {/* ネットワーク情報と最終更新時刻 */}
-        {balance && (
-          <div className="text-xs text-muted-foreground text-center pt-2 border-t space-y-1">
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <span>Base Sepolia</span>
-              {basename && !basenameLoading && (
-                <>
-                  <span>•</span>
-                  <span className="text-blue-600 font-medium">{basename}</span>
-                </>
-              )}
-              {basenameLoading && (
-                <>
-                  <span>•</span>
-                  <span className="text-gray-400 italic">Loading basename...</span>
-                </>
-              )}
-              <span>•</span>
-              <span>Updated {formatLastUpdated(balance.lastUpdated)}</span>
-            </div>
+        {/* Basenameまたはアドレス表示 */}
+        {walletAddress && (
+          <div className="text-xs text-center pt-2 border-t">
+            {basename ? (
+              <span className="text-blue-600 font-medium">{basename}</span>
+            ) : basenameLoading ? (
+              <span className="text-gray-400 italic">Loading basename...</span>
+            ) : (
+              <span className="text-muted-foreground font-mono">
+                {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+              </span>
+            )}
           </div>
         )}
       </CardContent>
