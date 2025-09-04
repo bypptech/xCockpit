@@ -8,7 +8,7 @@ interface TransactionHistoryProps {
 
 export default function TransactionHistory({ transactions, devices = [] }: TransactionHistoryProps) {
   const [showAll, setShowAll] = useState(false);
-  
+
   // Sort transactions by amount in descending order (highest first)
   const sortedTransactions = [...transactions].sort((a, b) => {
     const amountA = parseFloat(a.amount);
@@ -104,14 +104,14 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
                   <p className="font-medium text-sm text-card-foreground" data-testid={`text-transaction-action-${index}`}>
                     {tx.command.charAt(0).toUpperCase() + tx.command.slice(1)} {getDeviceName(tx.deviceId)}
                   </p>
-                  <p className="text-xs text-muted-foreground" data-testid={`text-transaction-time-${index}`}>
-                    {formatTimeAgo(tx.createdAt)}
+                  <p className="text-sm text-muted-foreground" data-testid={`text-transaction-time-${index}`}>
+                    {formatTimeAgo(new Date(tx.createdAt))}
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="font-medium text-sm text-card-foreground" data-testid={`text-transaction-amount-${index}`}>
-                  -{tx.amount} {tx.currency}
+                  {Math.abs(parseFloat(tx.amount)).toFixed(4)} USDC
                 </p>
                 <p className={`text-xs ${getStatusColor(tx.status)}`} data-testid={`text-transaction-status-${index}`}>
                   {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
