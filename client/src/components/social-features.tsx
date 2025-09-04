@@ -26,13 +26,10 @@ export function SocialFeatures({
 
     setIsSharing(true);
     try {
-      const text = `🎮 Just controlled IoT devices with crypto payments on xCockpit! 
+      const text = `🎮 Just controlled a real Gacha machine from my device—paid in USDC on Base.
+💰 ${totalPayments} tips • 🎯 ${deviceInteractions} spins
 
-💰 ${totalPayments} payments made
-🎯 ${deviceInteractions} device interactions
-⚡ Powered by Base + USDC
-
-Try it yourself! 🚀`;
+Nagesen Gacha Live lets viewers trigger a live Gacha with USDC tipping ⚡`;
 
       await shareCast(text, [window.location.origin]);
 
