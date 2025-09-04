@@ -8,6 +8,13 @@ interface TransactionHistoryProps {
 
 export default function TransactionHistory({ transactions, devices = [] }: TransactionHistoryProps) {
   const [showAll, setShowAll] = useState(false);
+  
+  // Sort transactions by amount in descending order (highest first)
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    const amountA = parseFloat(a.amount);
+    const amountB = parseFloat(b.amount);
+    return amountB - amountA;
+  });
 
   const getDeviceName = (deviceId: string) => {
     const device = devices.find(d => d.id === deviceId);
@@ -60,9 +67,9 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-lg text-card-foreground" data-testid="text-transaction-history-title">
-          Recent Transactions
+          Top Payments
         </h3>
-        {transactions.length > 5 && (
+        {sortedTransactions.length > 5 && (
           <button 
             onClick={() => setShowAll(!showAll)}
             className="text-sm text-primary hover:text-primary/80 font-medium" 
@@ -80,14 +87,14 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
               <i className="fas fa-history text-xl text-muted-foreground"></i>
             </div>
             <p className="text-muted-foreground" data-testid="text-no-transactions">
-              No transactions yet
+              No payments yet
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Make a payment to see your transaction history
+              Make a payment to see your payment ranking
             </p>
           </div>
         ) : (
-          (showAll ? transactions : transactions.slice(0, 5)).map((tx, index) => (
+          (showAll ? sortedTransactions : sortedTransactions.slice(0, 5)).map((tx, index) => (
             <div key={tx.id} className="flex items-center justify-between p-3 bg-muted rounded-lg" data-testid={`transaction-${index}`}>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">

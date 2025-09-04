@@ -233,7 +233,7 @@ export default function Dashboard() {
               <SocialFeatures
                 walletAddress={walletAddress}
                 totalPayments={paymentHistory.length}
-                totalAmount={paymentHistory.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0).toFixed(2)}
+                totalAmount={paymentHistory.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0).toFixed(6)}
                 deviceInteractions={paymentHistory.length}
               />
             )}
