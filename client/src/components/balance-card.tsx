@@ -227,7 +227,6 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               </span>
             )}
           </div>
-          <span className="text-xs">Updated {formatTimeAgo(lastUpdated)}</span>
         </CardDescription>
       </CardHeader>
       <CardContent>
