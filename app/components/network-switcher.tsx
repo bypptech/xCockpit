@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,8 +30,8 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
 
     try {
       const info = await walletService.getCurrentNetwork();
-      const isBaseNetwork = ['0x2105', '0x14a34'].includes(info.chainId.toLowerCase());
-      const isSupported = ['0x1', '0x2105', '0x14a34', '0xaa36a7'].includes(info.chainId.toLowerCase());
+      const isBaseNetwork = ['0x14a34'].includes(info.chainId.toLowerCase());
+      const isSupported = ['0x14a34', '0xaa36a7'].includes(info.chainId.toLowerCase());
       
       setNetworkInfo({
         ...info,
@@ -65,26 +65,6 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
     }
   }, [walletAddress]);
 
-  const switchToBaseMainnet = async () => {
-    setSwitching(true);
-    try {
-      await walletService.switchNetwork('base-mainnet');
-      toast({
-        title: 'Network switched!',
-        description: 'Successfully switched to Base Mainnet',
-      });
-      await loadNetworkInfo();
-    } catch (error) {
-      console.error('Failed to switch network:', error);
-      toast({
-        title: 'Failed to switch network',
-        description: 'Could not switch to Base Mainnet',
-        variant: 'destructive',
-      });
-    } finally {
-      setSwitching(false);
-    }
-  };
 
   const switchToBaseSepolia = async () => {
     setSwitching(true);
@@ -100,6 +80,27 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
       toast({
         title: 'Failed to switch network',
         description: 'Could not switch to Base Sepolia',
+        variant: 'destructive',
+      });
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const switchToSepoliaEthereum = async () => {
+    setSwitching(true);
+    try {
+      await walletService.switchNetwork('sepolia-ethereum');
+      toast({
+        title: 'Network switched!',
+        description: 'Successfully switched to ETH Sepolia',
+      });
+      await loadNetworkInfo();
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+      toast({
+        title: 'Failed to switch network',
+        description: 'Could not switch to ETH Sepolia',
         variant: 'destructive',
       });
     } finally {
@@ -163,27 +164,29 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
         </div>
 
         {/* Network Switch Buttons */}
-        {!networkInfo?.isBaseNetwork && (
-          <div className="space-y-2">
+        <div className="space-y-2">
+          {!networkInfo?.isBaseNetwork && (
             <Button
-              onClick={switchToBaseMainnet}
+              onClick={switchToBaseSepolia}
               disabled={switching}
               className="w-full"
               size="sm"
             >
-              {switching ? 'Switching...' : 'Switch to Base Mainnet'}
+              {switching ? 'Switching...' : 'Switch to Base Sepolia'}
             </Button>
+          )}
+          {networkInfo?.chainId?.toLowerCase() !== '0xaa36a7' && (
             <Button
-              onClick={switchToBaseSepolia}
+              onClick={switchToSepoliaEthereum}
               disabled={switching}
               variant="outline"
               className="w-full"
               size="sm"
             >
-              {switching ? 'Switching...' : 'Switch to Base Sepolia (Testnet)'}
+              {switching ? 'Switching...' : 'Switch to ETH Sepolia'}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Help Text */}
         <div className="text-xs text-muted-foreground text-center">

@@ -102,40 +102,10 @@ class WalletService {
     }
   }
 
-  async switchToBaseMainnet(): Promise<void> {
-    try {
-      await this.provider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }] // Base Mainnet chain ID (8453)
-      });
-    } catch (switchError: any) {
-      // If chain doesn't exist, add it
-      if (switchError.code === 4902) {
-        await this.provider.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x2105',
-            chainName: 'Base',
-            nativeCurrency: {
-              name: 'ETH',
-              symbol: 'ETH',
-              decimals: 18
-            },
-            rpcUrls: ['https://mainnet.base.org'],
-            blockExplorerUrls: ['https://basescan.org']
-          }]
-        });
-      } else {
-        throw switchError;
-      }
-    }
-  }
 
-  async switchNetwork(network: 'base-sepolia' | 'base-mainnet' | 'sepolia-ethereum'): Promise<void> {
+  async switchNetwork(network: 'base-sepolia' | 'sepolia-ethereum'): Promise<void> {
     if (network === 'base-sepolia') {
       await this.switchToBaseSepolia();
-    } else if (network === 'base-mainnet') {
-      await this.switchToBaseMainnet();
     } else if (network === 'sepolia-ethereum') {
       await this.switchToSepoliaEthereum();
     } else {
@@ -150,9 +120,7 @@ class WalletService {
       '0x14a34': 'Base Sepolia',
       '0x14A34': 'Base Sepolia',
       '0xaa36a7': 'Sepolia',
-      '0xAA36A7': 'Sepolia',
-      '0x2105': 'Base Mainnet',
-      '0x1': 'Ethereum Mainnet'
+      '0xAA36A7': 'Sepolia'
     };
     
     return {
@@ -203,10 +171,6 @@ class WalletService {
           '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
           '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8',
         ],
-        // Base Mainnet
-        '0x2105': ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'],
-        // Ethereum Mainnet
-        '0x1': ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'],
       };
       
       let usdcAddresses: string[] = [];

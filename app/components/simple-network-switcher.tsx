@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { walletService } from '@/lib/coinbase-wallet';
@@ -37,23 +37,6 @@ export function SimpleNetworkSwitcher({ walletAddress, className = '' }: Network
     loadNetworkInfo();
   }, [walletAddress]);
 
-  const switchToBaseMainnet = async () => {
-    setSwitching(true);
-    setMessage('Switching to Base Mainnet...');
-    
-    try {
-      await walletService.switchNetwork('base-mainnet');
-      setMessage('✅ Successfully switched to Base Mainnet!');
-      setTimeout(() => setMessage(''), 3000);
-      await loadNetworkInfo();
-    } catch (error: any) {
-      console.error('Failed to switch network:', error);
-      setMessage(`❌ Failed to switch: ${error.message}`);
-      setTimeout(() => setMessage(''), 5000);
-    } finally {
-      setSwitching(false);
-    }
-  };
 
   const switchToBaseSepolia = async () => {
     setSwitching(true);
@@ -73,16 +56,35 @@ export function SimpleNetworkSwitcher({ walletAddress, className = '' }: Network
     }
   };
 
+  const switchToSepoliaEthereum = async () => {
+    setSwitching(true);
+    setMessage('Switching to ETH Sepolia...');
+    
+    try {
+      await walletService.switchNetwork('sepolia-ethereum');
+      setMessage('✅ Successfully switched to ETH Sepolia!');
+      setTimeout(() => setMessage(''), 3000);
+      await loadNetworkInfo();
+    } catch (error: any) {
+      console.error('Failed to switch network:', error);
+      setMessage(`❌ Failed to switch: ${error.message}`);
+      setTimeout(() => setMessage(''), 5000);
+    } finally {
+      setSwitching(false);
+    }
+  };
+
   const isBaseNetwork = () => {
     if (!networkInfo) return false;
     const chainId = networkInfo.chainId.toLowerCase();
-    return chainId === '0x2105' || chainId === '0x14a34'; // Base Mainnet or Base Sepolia
+    return chainId === '0x14a34'; // Base Sepolia
   };
 
-  const isEthereumMainnet = () => {
+  const isSepoliaEthereum = () => {
     if (!networkInfo) return false;
-    return networkInfo.chainId.toLowerCase() === '0x1';
+    return networkInfo.chainId.toLowerCase() === '0xaa36a7'; // Sepolia Ethereum
   };
+
 
   if (!walletAddress) {
     return null;
@@ -108,40 +110,38 @@ export function SimpleNetworkSwitcher({ walletAddress, className = '' }: Network
 
         {/* Status Message */}
         {isBaseNetwork() ? (
-          networkInfo?.chainId.toLowerCase() === '0x2105' ? (
-            <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-              ✅ Basenames are fully supported on Base Mainnet!
-            </div>
-          ) : (
-            <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-              ℹ️ Connected to Base Sepolia. Basenames will be looked up via Base Mainnet.
-            </div>
-          )
+          <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+            ℹ️ Connected to Base Sepolia. Basenames will be looked up via Base Mainnet.
+          </div>
+        ) : isSepoliaEthereum() ? (
+          <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+            ℹ️ Connected to ETH Sepolia. Switch to Base networks for Basename support.
+          </div>
         ) : (
           <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-            ⚠️ Switch to Base network to view Basenames
+            ⚠️ Switch to supported network to view features
           </div>
         )}
 
         {/* Network Switch Buttons */}
-        {!isBaseNetwork() && (
+        {!isBaseNetwork() && !isSepoliaEthereum() && (
           <div className="space-y-2">
             <Button
-              onClick={switchToBaseMainnet}
+              onClick={switchToBaseSepolia}
               disabled={switching}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               size="sm"
             >
-              {switching ? '🔄 Switching...' : '🚀 Switch to Base Mainnet'}
+              {switching ? '🔄 Switching...' : '🧪 Switch to Base Sepolia'}
             </Button>
             <Button
-              onClick={switchToBaseSepolia}
+              onClick={switchToSepoliaEthereum}
               disabled={switching}
               variant="outline"
               className="w-full"
               size="sm"
             >
-              {switching ? '🔄 Switching...' : '🧪 Switch to Base Sepolia (Testnet)'}
+              {switching ? '🔄 Switching...' : '🔗 Switch to ETH Sepolia'}
             </Button>
           </div>
         )}
@@ -155,11 +155,8 @@ export function SimpleNetworkSwitcher({ walletAddress, className = '' }: Network
 
         {/* Debug Info */}
         <div className="text-xs text-gray-400 border-t pt-2">
-          {isEthereumMainnet() && (
-            <div>💡 You're on Ethereum Mainnet. Basenames work on Base networks.</div>
-          )}
-          {isBaseNetwork() && networkInfo?.chainId.toLowerCase() === '0x2105' && (
-            <div>✨ Base Mainnet has native Basename support.</div>
+          {isSepoliaEthereum() && (
+            <div>💡 You're on ETH Sepolia. Basenames work on Base networks.</div>
           )}
           {isBaseNetwork() && networkInfo?.chainId.toLowerCase() === '0x14a34' && (
             <div>🔄 Base Sepolia uses Base Mainnet for Basename lookups.</div>
