@@ -185,13 +185,16 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
               {device.id === 'ESP32_002' ? (
-                <>
-                  Play Fee (<i className="fas fa-lock mr-1"></i>Fixed)
-                </>
+                'Play Fee'
               ) : (
                 'Play Fee Customization'
               )}
             </h4>
+            {device.id === 'ESP32_002' && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                (Fixed Rate)
+              </span>
+            )}
           </div>
 
           {device.id === 'ESP32_002' ? (
@@ -201,13 +204,10 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
                 <span className="font-mono font-semibold text-gray-600 dark:text-gray-400 text-sm">
                   ${parseFloat(customFee).toFixed(3)} USDC
                 </span>
-                <span className="ml-2 text-xs text-gray-500 dark:text-gray-500">
-                  (Fixed Rate)
-                </span>
               </div>
               <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                 <i className="fas fa-info-circle mr-1"></i>
-                Cannot be changed
+                Fixed Rate
               </div>
             </div>
           ) : isEditingFee ? (
