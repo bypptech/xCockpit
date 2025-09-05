@@ -287,17 +287,6 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               <span className="text-sm font-medium text-secondary-foreground">
                 {parseInt(currentNetwork.chainId)}
               </span>
-              <span className="text-xs text-muted-foreground mt-1">Gas fees</span>
-              {hasInsufficientGas() && (
-                <a 
-                  href="https://blog.thirdweb.com/faucet-guides/how-to-get-free-sepolia-ether-eth-from-base-sepolia-testnet-faucet-3/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
-                >
-                  Get Testnet ETH
-                </a>
-              )}
             </div>
           </div>
 
