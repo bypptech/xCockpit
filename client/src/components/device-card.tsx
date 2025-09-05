@@ -187,7 +187,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
               {device.id === 'ESP32_002' ? (
                 'Play Fee'
               ) : (
-                'Play Fee Customization'
+                'Set Play Fee Yourself'
               )}
             </h4>
             {device.id === 'ESP32_002' && (
@@ -272,7 +272,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
                 className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400"
               >
                 <i className="fas fa-edit mr-1"></i>
-                Edit Fee
+                Set Fee
               </Button>
             </div>
           )}
