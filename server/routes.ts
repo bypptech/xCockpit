@@ -225,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Block fee changes for ESP32_002 (fixed fee device)
       if (deviceId === 'ESP32_002') {
         return res.status(403).json({
-          message: "Fee cannot be changed for this device - fixed at 0.005 USDC"
+          message: "Fee cannot be changed for this device - fixed at 0.123 USDC"
         });
       }
 

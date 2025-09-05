@@ -8,7 +8,7 @@ const FEES_FILE_PATH = join(process.cwd(), 'device-fees.json');
 // In-memory storage for fees (in production, use a database)
 let deviceFees: Record<string, number> = {
   'ESP32_001': 0.000,  // Default fee for Nagesen Gacha Live (requires user to set fee)
-  'ESP32_002': 0.005, // Default fee for Smart Gacha #002
+  'ESP32_002': 0.123, // Fixed fee for Gacha Live Demo
 };
 
 // Load fees from file on startup
@@ -72,7 +72,7 @@ export async function POST(
     // Block fee changes for ESP32_002 (fixed fee device)
     if (deviceId === 'ESP32_002') {
       return NextResponse.json(
-        { error: 'Fee cannot be changed for this device - fixed at 0.005 USDC' },
+        { error: 'Fee cannot be changed for this device - fixed at 0.123 USDC' },
         { status: 403 }
       );
     }

@@ -112,11 +112,16 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
     }
   };
 
-  // Always start with 0.000 fee to require user input each time
+  // Always start with 0.000 fee for ESP32_001, fixed 0.123 for ESP32_002
   useEffect(() => {
     if (device.type === 'gacha') {
-      console.log(`🔄 Initializing fee for ${device.id} to 0.000...`);
-      setCustomFee('0.000');
+      if (device.id === 'ESP32_001') {
+        console.log(`🔄 Initializing fee for ${device.id} to 0.000...`);
+        setCustomFee('0.000');
+      } else if (device.id === 'ESP32_002') {
+        console.log(`🔄 Setting fixed fee for ${device.id} to 0.123...`);
+        setCustomFee('0.123');
+      }
     }
   }, [device.id, device.type]);
 
@@ -177,11 +182,17 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
 
           {device.id === 'ESP32_002' ? (
             // Fixed fee display for ESP32_002
-            <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
                 <span className="font-mono font-semibold text-gray-600 dark:text-gray-400 text-sm">
-                  ${(Math.floor(parseFloat(customFee) * 1000) / 1000).toFixed(3)} USDC
+                  $0.123 USDC
                 </span>
               </div>
+              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                <i className="fas fa-lock mr-1"></i>
+                Fixed Rate
+              </div>
+            </div>
           ) : isEditingFee ? (
             <div className="flex gap-2">
               <Input
@@ -283,7 +294,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           )}
           {device.type === 'gacha' && device.id === 'ESP32_002' && (
             <span className="ml-2 text-sm opacity-90">
-              ${(Math.floor(parseFloat(customFee) * 1000) / 1000).toFixed(3)} USDC
+              $0.123 USDC
             </span>
           )}
         </Button>
