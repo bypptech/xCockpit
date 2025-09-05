@@ -66,7 +66,8 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
   return (
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg text-card-foreground" data-testid="text-transaction-history-title">
+        <h3 className="flex items-center gap-2 text-xl font-semibold leading-none tracking-tight text-card-foreground" data-testid="text-transaction-history-title">
+          <i className="fas fa-trophy text-yellow-500"></i>
           Top Payments
         </h3>
         {sortedTransactions.length > 5 && (
