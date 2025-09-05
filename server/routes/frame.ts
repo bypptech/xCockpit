@@ -242,4 +242,48 @@ router.post('/frame/test-verify', async (req, res) => {
   }
 });
 
+// Test endpoint for new Farcaster data validation
+router.get('/frame/test-env', async (req, res) => {
+  try {
+    console.log('🧪 Testing new Farcaster environment data');
+    
+    // 1. Environment validation
+    const envValidation = validateFarcasterEnvVars();
+    
+    // 2. Decode and validate payload
+    let payloadValidation = null;
+    if (envValidation.header && envValidation.payload) {
+      payloadValidation = verifier.verifyPayload(
+        envValidation.header,
+        envValidation.payload
+      );
+    }
+    
+    // 3. Decode header and payload for inspection
+    let decodedData = null;
+    try {
+      const decodedHeader = JSON.parse(Buffer.from(envValidation.header!, 'base64url').toString('utf-8'));
+      const decodedPayload = JSON.parse(Buffer.from(envValidation.payload!, 'base64url').toString('utf-8'));
+      decodedData = { header: decodedHeader, payload: decodedPayload };
+    } catch (e) {
+      console.error('Failed to decode data:', e);
+    }
+    
+    res.json({
+      success: true,
+      environmentValidation: envValidation,
+      payloadValidation,
+      decodedData,
+      appUrl: APP_URL,
+      message: "Farcaster environment test completed - check console logs"
+    });
+  } catch (error) {
+    console.error('❌ Environment test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
