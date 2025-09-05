@@ -10,13 +10,15 @@ interface SocialFeaturesProps {
   totalPayments?: number;
   totalAmount?: string;
   deviceInteractions?: number;
+  lastPlayFee?: string;
 }
 
 export function SocialFeatures({ 
   walletAddress, 
   totalPayments = 0, 
   totalAmount = "0", 
-  deviceInteractions = 0 
+  deviceInteractions = 0,
+  lastPlayFee = "0"
 }: SocialFeaturesProps) {
   const { user, isMiniApp, shareCast, viewProfile } = useMiniApp();
   const [isSharing, setIsSharing] = useState(false);
@@ -27,7 +29,7 @@ export function SocialFeatures({
     setIsSharing(true);
     try {
       const text = `🎮 Just controlled a real Gacha machine from my device—paid in USDC on Base.
-💰 ${totalPayments} tips • 🎯 ${deviceInteractions} spins
+💰 ${parseFloat(lastPlayFee).toFixed(3)} USDC • 🎯 ${deviceInteractions} spins
 
 Nagesen Gacha Live lets viewers trigger a live Gacha with USDC tipping ⚡`;
 
