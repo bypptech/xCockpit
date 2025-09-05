@@ -177,17 +177,11 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
 
           {device.id === 'ESP32_002' ? (
             // Fixed fee display for ESP32_002
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
+            <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
                 <span className="font-mono font-semibold text-gray-600 dark:text-gray-400 text-sm">
-                  ${parseFloat(customFee).toFixed(3)} USDC
+                  ${(Math.floor(parseFloat(customFee) * 10000) / 10000).toFixed(4)} USDC
                 </span>
               </div>
-              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                <i className="fas fa-info-circle mr-1"></i>
-                Fixed Rate
-              </div>
-            </div>
           ) : isEditingFee ? (
             <div className="flex gap-2">
               <Input
@@ -240,7 +234,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             <div className="flex items-center gap-2">
               <div className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600">
                 <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-sm">
-                  ${parseFloat(customFee).toFixed(3)} USDC
+                  ${(Math.floor(parseFloat(customFee) * 10000) / 10000).toFixed(4)} USDC
                 </span>
               </div>
               <Button
@@ -284,12 +278,12 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) <= 0.000 ? 'Set Fee to Play' : getCommandLabel()}
           {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) > 0.000 && (
             <span className="ml-2 text-sm opacity-90">
-              ${parseFloat(customFee).toFixed(3)} USDC
+              ${(Math.floor(parseFloat(customFee) * 10000) / 10000).toFixed(4)} USDC
             </span>
           )}
           {device.type === 'gacha' && device.id === 'ESP32_002' && (
             <span className="ml-2 text-sm opacity-90">
-              ${parseFloat(customFee).toFixed(3)} USDC
+              ${(Math.floor(parseFloat(customFee) * 10000) / 10000).toFixed(4)} USDC
             </span>
           )}
         </Button>
