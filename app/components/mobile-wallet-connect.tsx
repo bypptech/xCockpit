@@ -18,11 +18,49 @@ export function MobileWalletConnect() {
   const [isMobileDevice, setIsMobileDevice] = useState(false)
   
   // 自動復帰システムを使用
-  const { isWalletOpened, showReturnButton, connectionAttempts } = useWalletAutoReturn({
-    timeoutMs: 45000, // 45秒でタイムアウト
-    checkIntervalMs: 2000, // 2秒ごとにチェック
-    maxRetries: 5 // 最大5回まで再試行
-  })
+  const { isWalletOpened, connectionAttempts, forceReturn } = useWalletAutoReturn()
+
+  // ウォレット接続イベントのリスナー
+  useEffect(() => {
+    const handleWalletConnected = (event: CustomEvent) => {
+      toast({
+        title: "🎉 接続完了！",
+        description: "ウォレットが正常に接続されました",
+        duration: 3000,
+      })
+    }
+
+    const handleWalletConnectionFailed = (event: CustomEvent) => {
+      toast({
+        title: "接続に時間がかかっています",
+        description: `試行回数: ${event.detail.attempts}/3`,
+        variant: "destructive",
+        duration: 5000,
+        action: (
+          <Button
+            size="sm"
+            onClick={() => {
+              forceReturn()
+              toast({
+                title: "リセットしました",
+                description: "再度接続をお試しください",
+              })
+            }}
+          >
+            リセット
+          </Button>
+        )
+      })
+    }
+
+    window.addEventListener('walletConnected', handleWalletConnected as EventListener)
+    window.addEventListener('walletConnectionFailed', handleWalletConnectionFailed as EventListener)
+
+    return () => {
+      window.removeEventListener('walletConnected', handleWalletConnected as EventListener)
+      window.removeEventListener('walletConnectionFailed', handleWalletConnectionFailed as EventListener)
+    }
+  }, [forceReturn])
 
   useEffect(() => {
     setIsMobileDevice(isMobile())
