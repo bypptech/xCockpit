@@ -236,26 +236,22 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
             <div className="flex flex-col">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-muted-foreground">USDC Balance</span>
-                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                  {currentNetwork.shortName}
-                </span>
+                {currentNetwork.shortName !== 'Unknown' && (
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                    {currentNetwork.shortName}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold text-primary">
                   ${parseFloat(usdcBalance).toFixed(4)}
                 </span>
-                {balanceChange === 'increase' && (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                )}
-                {balanceChange === 'decrease' && (
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                )}
               </div>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-xs text-muted-foreground">Chain ID</span>
               <span className="text-sm font-medium text-primary">
-                {currentNetwork.chainId}
+                {parseInt(currentNetwork.chainId)}
               </span>
               <span className="text-xs text-green-500 mt-1">Available</span>
             </div>
@@ -266,9 +262,11 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
             <div className="flex flex-col">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-muted-foreground">ETH Balance</span>
-                <span className="text-xs bg-secondary-foreground/20 text-secondary-foreground px-2 py-0.5 rounded-full">
-                  {currentNetwork.shortName}
-                </span>
+                {currentNetwork.shortName !== 'Unknown' && (
+                  <span className="text-xs bg-secondary-foreground/20 text-secondary-foreground px-2 py-0.5 rounded-full">
+                    {currentNetwork.shortName}
+                  </span>
+                )}
                 {hasInsufficientGas() && (
                   <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 px-2 py-0.5 rounded-full">
                     Low Gas
@@ -287,7 +285,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
             <div className="flex flex-col items-end">
               <span className="text-xs text-muted-foreground">Chain ID</span>
               <span className="text-sm font-medium text-secondary-foreground">
-                {currentNetwork.chainId}
+                {parseInt(currentNetwork.chainId)}
               </span>
               <span className="text-xs text-muted-foreground mt-1">Gas fees</span>
               {hasInsufficientGas() && (
