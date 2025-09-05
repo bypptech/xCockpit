@@ -190,12 +190,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
                 'Set Play Fee Yourself'
               )}
             </h4>
-            {device.id === 'ESP32_002' && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                (Fixed Rate)
-              </span>
-            )}
-          </div>
+            </div>
 
           {device.id === 'ESP32_002' ? (
             // Fixed fee display for ESP32_002
