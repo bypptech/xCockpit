@@ -1,0 +1,25 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.xCockpit.app",
+        "paths": [
+          "/wallet/*",
+          "/connect/*",
+          "/"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAMID.com.xCockpit.app"
+    ]
+  },
+  "appclips": {
+    "apps": [
+      "TEAMID.com.xCockpit.app.Clip"
+    ]
+  }
+}

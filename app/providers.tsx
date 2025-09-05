@@ -1,7 +1,11 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState, ReactNode } from 'react'
+import { ReactNode } from 'react'
+import { WagmiProvider } from 'wagmi'
+import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit'
+import { config } from './lib/wagmi-config'
+import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,8 +22,29 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          theme={{
+            lightMode: lightTheme({
+              accentColor: '#7c3aed',
+              accentColorForeground: 'white',
+              borderRadius: 'large',
+              fontStack: 'system',
+            }),
+            darkMode: darkTheme({
+              accentColor: '#7c3aed',
+              accentColorForeground: 'white',
+              borderRadius: 'large',
+              fontStack: 'system',
+            }),
+          }}
+          modalSize="compact"
+          showRecentTransactions={true}
+        >
+          {children}
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   )
 }

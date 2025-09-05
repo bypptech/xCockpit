@@ -11,6 +11,15 @@ export const metadata: Metadata = {
     ? 'https://xcockpit.replit.app' 
     : 'http://localhost:3000'
   ),
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'xCockpit',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     title: 'xCockpit - Web3 IoT Control Dashboard',
     description: 'Control IoT devices with USDC payments on Base Network. Experience the future of Web3 + IoT integration.',
@@ -18,6 +27,16 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
   other: {
+    // PWA Meta Tags
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'xCockpit',
+    'application-name': 'xCockpit',
+    'msapplication-TileColor': '#7c3aed',
+    'msapplication-tap-highlight': 'no',
+    'theme-color': '#7c3aed',
+    
     // Farcaster Frame Meta Tags for Mini App
     'fc:frame': 'vNext',
     'fc:frame:image': '/frame-image.png',
@@ -37,7 +56,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+  themeColor: '#7c3aed',
 }
 
 export default function RootLayout({
