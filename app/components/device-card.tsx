@@ -216,10 +216,13 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
             ) : (
               <>
                 <div className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600">
-                  <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">
+                  <span className={`font-mono font-semibold ${parseFloat(customFee) <= 0 ? 'text-gray-500 dark:text-gray-400' : 'text-blue-600 dark:text-blue-400'}`}>
                     ${parseFloat(customFee).toFixed(3)}
                   </span>
                   <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">USDC</span>
+                  {parseFloat(customFee) <= 0 && (
+                    <span className="text-xs text-red-500 dark:text-red-400 ml-2">(Not Set)</span>
+                  )}
                 </div>
                 <Button
                   size="sm"
@@ -241,11 +244,11 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         <Button 
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => onCommand(device, getDeviceCommand(), device.type === 'gacha' ? parseFloat(customFee) : undefined)}
-          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready')}
+          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && (device.status !== 'ready' || parseFloat(customFee) <= 0))}
           data-testid={`button-device-command-${device.id}`}
         >
           <i className={`${getDeviceIcon()} mr-2`}></i>
-          {getCommandLabel()}
+          {device.type === 'gacha' && parseFloat(customFee) <= 0 ? 'Set Fee to Play' : getCommandLabel()}
           <span className="ml-2 text-sm opacity-90">
             ${device.type === 'gacha' ? parseFloat(customFee).toFixed(3) : parseFloat((device.metadata as { price?: string } | null)?.price || '0.01').toFixed(3)} USDC
           </span>

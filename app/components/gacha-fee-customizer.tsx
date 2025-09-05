@@ -49,6 +49,9 @@ export function GachaFeeCustomizer({
     if (isNaN(fee)) {
       return { valid: false, message: 'Please enter a valid number' };
     }
+    if (fee <= 0) {
+      return { valid: false, message: 'Fee must be greater than 0 USDC' };
+    }
     if (fee < MIN_FEE) {
       return { valid: false, message: `Minimum fee is ${MIN_FEE} USDC` };
     }
@@ -94,12 +97,13 @@ export function GachaFeeCustomizer({
   };
 
   const handlePlayGacha = () => {
-    if (isValid) {
+    if (isValid && customFee > 0) {
       onPlayGacha(customFee);
     }
   };
 
   const getFeeLevel = (fee: number): { level: string; color: string; icon: React.ReactNode } => {
+    if (fee <= 0) return { level: 'Not Set', color: 'text-gray-500', icon: <Settings className="w-4 h-4" /> };
     if (fee <= 0.01) return { level: 'Minimal', color: 'text-green-600', icon: <TrendingDown className="w-4 h-4" /> };
     if (fee <= 0.1) return { level: 'Low', color: 'text-blue-600', icon: <DollarSign className="w-4 h-4" /> };
     if (fee <= 1) return { level: 'Standard', color: 'text-yellow-600', icon: <Coins className="w-4 h-4" /> };
@@ -221,7 +225,7 @@ export function GachaFeeCustomizer({
       <CardFooter className="flex gap-2">
         <Button
           onClick={handlePlayGacha}
-          disabled={!isValid || isPlaying || !walletAddress}
+          disabled={!isValid || isPlaying || !walletAddress || customFee <= 0}
           className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
           size="lg"
         >
@@ -229,6 +233,11 @@ export function GachaFeeCustomizer({
             <>
               <Coins className="w-4 h-4 mr-2" />
               Connect Wallet to Play
+            </>
+          ) : customFee <= 0 ? (
+            <>
+              <Settings className="w-4 h-4 mr-2" />
+              Set Fee to Play
             </>
           ) : isPlaying ? (
             <>

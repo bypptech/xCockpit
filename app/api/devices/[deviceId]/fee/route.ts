@@ -7,7 +7,7 @@ const FEES_FILE_PATH = join(process.cwd(), 'device-fees.json');
 
 // In-memory storage for fees (in production, use a database)
 let deviceFees: Record<string, number> = {
-  'ESP32_001': 0.01,  // Default fee for Smart Gacha #001
+  'ESP32_001': 0.000,  // Default fee for Nagesen Gacha Live (requires user to set fee)
   'ESP32_002': 0.005, // Default fee for Smart Gacha #002
 };
 
@@ -78,9 +78,9 @@ export async function POST(
     }
 
     // Validate fee
-    if (typeof fee !== 'number' || fee < 0.001 || fee > 999) {
+    if (typeof fee !== 'number' || fee <= 0 || fee > 999) {
       return NextResponse.json(
-        { error: 'Invalid fee. Must be between 0.001 and 999 USDC' },
+        { error: 'Invalid fee. Must be greater than 0 and less than or equal to 999 USDC' },
         { status: 400 }
       );
     }

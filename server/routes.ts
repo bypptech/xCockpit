@@ -230,9 +230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate fee range
-      if (typeof fee !== 'number' || fee < 0.001 || fee > 999) {
+      if (typeof fee !== 'number' || fee <= 0 || fee > 999) {
         return res.status(400).json({
-          message: "Fee must be between 0.001 and 999 USDC"
+          message: "Fee must be greater than 0 and less than or equal to 999 USDC"
         });
       }
 
