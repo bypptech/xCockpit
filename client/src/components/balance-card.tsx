@@ -232,36 +232,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
           )}
         </CardDescription>
 
-        {/* Network Switching Buttons */}
-        <div className="flex gap-2 mt-3">
-          <Button
-            variant={currentNetwork.chainId === '8453' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleNetworkSwitch('base-mainnet')}
-            disabled={isSwitchingNetwork}
-            className="text-xs h-7 flex-1"
-          >
-            Base
-          </Button>
-          <Button
-            variant={currentNetwork.chainId === '84532' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleNetworkSwitch('base-sepolia')}
-            disabled={isSwitchingNetwork}
-            className="text-xs h-7 flex-1"
-          >
-            Base Sepolia
-          </Button>
-          <Button
-            variant={currentNetwork.chainId === '11155111' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleNetworkSwitch('sepolia-ethereum')}
-            disabled={isSwitchingNetwork}
-            className="text-xs h-7 flex-1"
-          >
-            ETH Sepolia
-          </Button>
-        </div>
+        
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
