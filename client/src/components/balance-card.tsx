@@ -225,7 +225,7 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
               basename
             </span>
           )}
-          {!basename && !basenameLoading && (
+          {!basename && !basenameLoading && walletAddress && (
             <span className="text-xs text-muted-foreground">
               No basename
             </span>
