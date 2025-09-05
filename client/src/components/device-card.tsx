@@ -112,28 +112,11 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
     }
   };
 
-  // Load saved fee from API
+  // Always start with 0.000 fee to require user input each time
   useEffect(() => {
     if (device.type === 'gacha') {
-      console.log(`🔄 Loading fee for ${device.id}...`);
-      fetch(`/api/devices/${device.id}/fee`)
-        .then(res => {
-          if (res.ok) {
-            return res.json();
-          }
-          throw new Error(`HTTP ${res.status}`);
-        })
-        .then(data => {
-          console.log(`✅ Loaded fee for ${device.id}:`, data.currentFee);
-          if (data.currentFee !== undefined) {
-            setCustomFee(data.currentFee.toString());
-          }
-        })
-        .catch(err => {
-          console.error(`❌ Failed to load fee for ${device.id}:`, err);
-          // Set default fee for this device to 0.000 to require user input
-          setCustomFee('0.000');
-        });
+      console.log(`🔄 Initializing fee for ${device.id} to 0.000...`);
+      setCustomFee('0.000');
     }
   }, [device.id, device.type]);
 
@@ -284,7 +267,16 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
       <div className="flex space-x-3">
         <Button
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-          onClick={() => onCommand(device, getDeviceCommand())}
+          onClick={() => {
+            onCommand(device, getDeviceCommand());
+            // Reset fee to 0.000 after play for ESP32_001
+            if (device.type === 'gacha' && device.id === 'ESP32_001') {
+              setTimeout(() => {
+                setCustomFee('0.000');
+                console.log(`🔄 Reset fee to 0.000 for ${device.id} after play`);
+              }, 1000); // Reset after 1 second to allow transaction to complete
+            }
+          }}
           disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready') || (device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) <= 0.000)}
           data-testid={`button-device-command-${device.id}`}
         >
