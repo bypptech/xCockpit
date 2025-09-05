@@ -179,14 +179,14 @@ function DashboardContent() {
             // Set default fee if API call fails
             setGachaFees(prev => ({
               ...prev,
-              [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.005
+              [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.123
             }));
           }
         } catch (fetchError) {
           console.error(`💥 Network error loading fee for ${deviceId}:`, fetchError);
           setGachaFees(prev => ({
             ...prev,
-            [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.005
+            [deviceId]: deviceId === 'ESP32_001' ? 0.5 : 0.123
           }));
         }
       }

@@ -47,7 +47,7 @@ export class X402Service {
     // Fallback to default pricing if no persisted fee
     const defaultPricing: Record<string, string> = {
       'ESP32_001': '0.5',   // Default Gacha #001 fee
-      'ESP32_002': '0.005', // Default Gacha #002 fee
+      'ESP32_002': '0.123', // Fixed Gacha Live Demo fee
     };
     
     const basePrice = defaultPricing[deviceId] || '0.01';
