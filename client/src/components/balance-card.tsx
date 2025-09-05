@@ -212,30 +212,24 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
             </button>
           </div>
         </CardTitle>
-        <CardDescription className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span>{currentNetwork.name} • Updated {formatTimeAgo(lastUpdated)}</span>
-          </div>
-          {/* Basename display */}
-          <div className="flex items-center gap-2">
-            <BasenameDisplay 
-              address={walletAddress} 
-              variant="inline"
-              showCopyButton={false}
-              showExternalLink={false}
-              className="text-sm"
-            />
-            {basename && (
-              <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">
-                basename
-              </span>
-            )}
-            {!basename && !basenameLoading && (
-              <span className="text-xs text-muted-foreground">
-                No basename
-              </span>
-            )}
-          </div>
+        <CardDescription className="flex items-center gap-2">
+          <BasenameDisplay 
+            address={walletAddress} 
+            variant="inline"
+            showCopyButton={false}
+            showExternalLink={false}
+            className="text-sm"
+          />
+          {basename && (
+            <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">
+              basename
+            </span>
+          )}
+          {!basename && !basenameLoading && (
+            <span className="text-xs text-muted-foreground">
+              No basename
+            </span>
+          )}
         </CardDescription>
 
         {/* Network Switching Buttons */}
