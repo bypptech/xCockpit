@@ -27,7 +27,7 @@ export function SocialFeatures({
     setIsSharing(true);
     try {
       const text = `🎮 Just controlled a real Gacha machine from my device—paid in USDC on Base.
-💰 ${totalPayments} tips • 🎯 ${deviceInteractions} spins
+💰 ${totalAmount} USDC • 🎯 ${deviceInteractions} spins
 
 Nagesen Gacha Live lets viewers trigger a live Gacha with USDC tipping ⚡`;
 
