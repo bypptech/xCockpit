@@ -215,10 +215,6 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
         <CardDescription className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span>{currentNetwork.name} • Updated {formatTimeAgo(lastUpdated)}</span>
-            <div className="flex items-center gap-1">
-              <Network className="h-3 w-3" />
-              <span className="text-xs">Network</span>
-            </div>
           </div>
           {/* Basename display */}
           <div className="flex items-center gap-2">
