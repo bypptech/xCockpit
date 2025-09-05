@@ -13,7 +13,7 @@ interface DeviceCardProps {
 export default function DeviceCard({ device, onCommand, isWalletConnected, userSessions }: DeviceCardProps) {
   const activeSession = userSessions.find(s => s.deviceId === device.id);
   const hasAccess = !!activeSession;
-  const [customFee, setCustomFee] = useState<string>('0.01'); // Default fee
+  const [customFee, setCustomFee] = useState<string>('0.000'); // Default fee set to 0.000
   const [isEditingFee, setIsEditingFee] = useState(false);
 
   // Load fee from device metadata on mount and when device changes
@@ -131,8 +131,8 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         })
         .catch(err => {
           console.error(`❌ Failed to load fee for ${device.id}:`, err);
-          // Set default fee for this device
-          setCustomFee(device.id === 'ESP32_001' ? '0.500' : '0.005');
+          // Set default fee for this device to 0.000 to require user input
+          setCustomFee('0.000');
         });
     }
   }, [device.id, device.type]);
@@ -285,14 +285,16 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         <Button
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => onCommand(device, getDeviceCommand())}
-          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready')}
+          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready') || (device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) === 0.000)}
           data-testid={`button-device-command-${device.id}`}
         >
           <i className={`${getDeviceIcon()} mr-2`}></i>
-          {getCommandLabel()}
-          <span className="ml-2 text-sm opacity-90">
-            ${parseFloat(customFee).toFixed(3)} USDC
-          </span>
+          {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) === 0.000 ? 'Set Fee to Play' : getCommandLabel()}
+          {device.type === 'gacha' && parseFloat(customFee) > 0.000 && (
+            <span className="ml-2 text-sm opacity-90">
+              ${parseFloat(customFee).toFixed(3)} USDC
+            </span>
+          )}
         </Button>
       </div>
 
