@@ -39,16 +39,16 @@ export default function PaymentModal({ device, command, amount, recipient, walle
           amount: amount,
           recipient: recipient
         });
-        
+
         // Execute direct USDC payment
         const txHash = await walletService.sendUSDCPayment(recipient, amount);
-        
+
         if (!txHash) {
           throw new Error('Payment transaction failed');
         }
-        
+
         console.log(`✅ Payment completed: ${txHash}`);
-        
+
         // Phase 2: Submit payment proof to x402 endpoint
         setPaymentStatus('confirming');
         const submitResult = await X402Client.submitPayment(device.id, command, {
@@ -66,10 +66,10 @@ export default function PaymentModal({ device, command, amount, recipient, walle
         // Success!
         setPaymentStatus('completed');
         balanceEvents.triggerBalanceUpdate();
-        
+
         // Invalidate payment history to refresh transactions
         queryClient.invalidateQueries({ queryKey: ['/api/payments', walletAddress] });
-        
+
         toast({
           title: "Payment Successful",
           description: `${command} executed on ${device.name}`,
@@ -95,7 +95,7 @@ export default function PaymentModal({ device, command, amount, recipient, walle
         console.error('Payment failed:', error);
         setPaymentStatus('error');
         setPaymentError(error.message);
-        
+
         toast({
           title: "Payment Failed",
           description: error.message,
@@ -130,6 +130,10 @@ export default function PaymentModal({ device, command, amount, recipient, walle
     }
   };
 
+  // Assuming deviceId is available or can be derived from 'device' prop
+  // For now, let's use device.id as a placeholder if device.name is not directly usable for conditional logic
+  const deviceId = device.id; // Or use device.name if it's the unique identifier
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -145,7 +149,9 @@ export default function PaymentModal({ device, command, amount, recipient, walle
           <div className="bg-secondary/50 p-4 rounded-lg space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Device</span>
-              <span className="font-medium">{device.name}</span>
+              <span className="font-medium">
+                {deviceId === 'ESP32_002' ? 'Gacha Live Demo' : deviceId === 'ESP32_001' ? 'Nagesen Gacha Live' : deviceId}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Command</span>
@@ -168,7 +174,7 @@ export default function PaymentModal({ device, command, amount, recipient, walle
                 <span className="text-sm text-muted-foreground">Method</span>
                 <span className="text-sm font-medium">💸 Direct USDC Transfer</span>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 {paymentStatus === 'processing' || paymentStatus === 'confirming' ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -195,7 +201,7 @@ export default function PaymentModal({ device, command, amount, recipient, walle
             >
               {paymentStatus === 'completed' ? 'Close' : 'Cancel'}
             </Button>
-            
+
             {paymentStatus !== 'completed' && (
               <Button
                 onClick={handlePayment}
