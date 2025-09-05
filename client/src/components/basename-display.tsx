@@ -33,7 +33,13 @@ export function BasenameDisplay({
   
   const { basename, loading, error } = useBasename(address);
   
-  console.log('BasenameDisplay Component - Hook Result:', { basename, loading, error });
+  console.log('BasenameDisplay Component - Hook Result:', { 
+    basename, 
+    loading, 
+    error,
+    hasBasename: !!basename,
+    displayText: loading ? formatAddress(address, null) : formatAddress(address, basename)
+  });
   
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);

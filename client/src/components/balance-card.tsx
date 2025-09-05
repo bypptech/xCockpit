@@ -41,6 +41,18 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
     walletAddress 
   });
 
+  // デバッグ用: ウォレット接続状態とBasename検索状況を詳細ログ
+  useEffect(() => {
+    console.log('🔍 BalanceCard Debug - Wallet & Basename Status:', {
+      walletAddress,
+      hasWallet: !!walletAddress,
+      basenameLoading,
+      basename,
+      ownedBasename,
+      hasReverseRecord
+    });
+  }, [walletAddress, basenameLoading, basename, ownedBasename, hasReverseRecord]);
+
   useEffect(() => {
     if (walletAddress) {
       loadBalances();
