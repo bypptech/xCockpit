@@ -285,12 +285,17 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
         <Button
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => onCommand(device, getDeviceCommand())}
-          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready') || (device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) === 0.000)}
+          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready') || (device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) <= 0.000)}
           data-testid={`button-device-command-${device.id}`}
         >
           <i className={`${getDeviceIcon()} mr-2`}></i>
-          {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) === 0.000 ? 'Set Fee to Play' : getCommandLabel()}
-          {device.type === 'gacha' && parseFloat(customFee) > 0.000 && (
+          {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) <= 0.000 ? 'Set Fee to Play' : getCommandLabel()}
+          {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(customFee) > 0.000 && (
+            <span className="ml-2 text-sm opacity-90">
+              ${parseFloat(customFee).toFixed(3)} USDC
+            </span>
+          )}
+          {device.type === 'gacha' && device.id === 'ESP32_002' && (
             <span className="ml-2 text-sm opacity-90">
               ${parseFloat(customFee).toFixed(3)} USDC
             </span>
