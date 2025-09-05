@@ -18,7 +18,14 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
 
   const getDeviceName = (deviceId: string) => {
     const device = devices.find(d => d.id === deviceId);
-    return device ? device.name : 'Unknown Device';
+    if (device) {
+      // Map specific device names
+      if (device.id === 'ESP32_001' || device.name === 'Smart Gacha #001') {
+        return 'Nagesen Gacha Live';
+      }
+      return device.name;
+    }
+    return 'Unknown Device';
   };
 
   const getTransactionIcon = (command: string) => {
@@ -112,7 +119,7 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
               </div>
               <div className="text-right">
                 <p className="font-medium text-sm text-card-foreground" data-testid={`text-transaction-amount-${index}`}>
-                  {Math.abs(parseFloat(tx.amount)).toFixed(4)} USDC
+                  {Math.abs(parseFloat(tx.amount)).toFixed(3)} USDC
                 </p>
                 <p className={`text-xs ${getStatusColor(tx.status)}`} data-testid={`text-transaction-status-${index}`}>
                   {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
