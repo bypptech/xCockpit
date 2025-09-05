@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle, Globe, Wifi } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, Globe } from 'lucide-react';
 import { walletService } from '@/lib/coinbase-wallet';
 
 interface NetworkSwitcherProps {
@@ -17,26 +15,21 @@ interface NetworkInfo {
   chainId: string;
   name: string;
   isBaseNetwork: boolean;
-  isSupported: boolean;
 }
 
 export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitcherProps) {
   const [networkInfo, setNetworkInfo] = useState<NetworkInfo | null>(null);
-  const [switching, setSwitching] = useState(false);
-  const { toast } = useToast();
 
   const loadNetworkInfo = async () => {
     if (!walletAddress) return;
 
     try {
       const info = await walletService.getCurrentNetwork();
-      const isBaseNetwork = ['0x14a34'].includes(info.chainId.toLowerCase());
-      const isSupported = ['0x14a34', '0xaa36a7'].includes(info.chainId.toLowerCase());
-      
+      const isBaseNetwork = info.chainId.toLowerCase() === '0x14a34'; // Base Sepolia only
+
       setNetworkInfo({
         ...info,
-        isBaseNetwork,
-        isSupported
+        isBaseNetwork
       });
     } catch (error) {
       console.error('Failed to load network info:', error);
@@ -58,55 +51,16 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
     // MetaMaskのネットワーク変更イベントを監視
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       (window as any).ethereum.on('chainChanged', handleNetworkChange);
-      
+
       return () => {
         (window as any).ethereum.removeListener('chainChanged', handleNetworkChange);
       };
     }
   }, [walletAddress]);
 
-
-  const switchToBaseSepolia = async () => {
-    setSwitching(true);
-    try {
-      await walletService.switchNetwork('base-sepolia');
-      toast({
-        title: 'Network switched!',
-        description: 'Successfully switched to Base Sepolia',
-      });
-      await loadNetworkInfo();
-    } catch (error) {
-      console.error('Failed to switch network:', error);
-      toast({
-        title: 'Failed to switch network',
-        description: 'Could not switch to Base Sepolia',
-        variant: 'destructive',
-      });
-    } finally {
-      setSwitching(false);
-    }
-  };
-
-  const switchToSepoliaEthereum = async () => {
-    setSwitching(true);
-    try {
-      await walletService.switchNetwork('sepolia-ethereum');
-      toast({
-        title: 'Network switched!',
-        description: 'Successfully switched to ETH Sepolia',
-      });
-      await loadNetworkInfo();
-    } catch (error) {
-      console.error('Failed to switch network:', error);
-      toast({
-        title: 'Failed to switch network',
-        description: 'Could not switch to ETH Sepolia',
-        variant: 'destructive',
-      });
-    } finally {
-      setSwitching(false);
-    }
-  };
+  if (!walletAddress) {
+    return null;
+  }
 
   const getNetworkStatus = () => {
     if (!networkInfo) return { variant: 'secondary' as const, icon: Globe, text: 'Loading...' };
@@ -115,20 +69,16 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
       return { 
         variant: 'default' as const, 
         icon: CheckCircle, 
-        text: `Connected to ${networkInfo.name}` 
+        text: `Connected to Base Sepolia` 
       };
     } else {
       return { 
         variant: 'destructive' as const, 
-        icon: AlertCircle, 
-        text: `⚠️ ${networkInfo.name} - Basenames not supported` 
+        icon: Globe, 
+        text: `❌ Wrong Network - Base Sepolia Required` 
       };
     }
   };
-
-  if (!walletAddress) {
-    return null;
-  }
 
   const status = getNetworkStatus();
   const StatusIcon = status.icon;
@@ -154,46 +104,21 @@ export function NetworkSwitcher({ walletAddress, className = '' }: NetworkSwitch
         <div className="text-xs text-muted-foreground">
           {networkInfo?.isBaseNetwork ? (
             <div className="text-green-600">
-              ✅ Basenames are supported on this network
+              ✅ Connected to Base Sepolia testnet
             </div>
           ) : (
-            <div className="text-orange-600">
-              ⚠️ Switch to Base network to view Basenames
+            <div className="text-red-600">
+              ❌ Please switch to Base Sepolia in your wallet
             </div>
-          )}
-        </div>
-
-        {/* Network Switch Buttons */}
-        <div className="space-y-2">
-          {!networkInfo?.isBaseNetwork && (
-            <Button
-              onClick={switchToBaseSepolia}
-              disabled={switching}
-              className="w-full"
-              size="sm"
-            >
-              {switching ? 'Switching...' : 'Switch to Base Sepolia'}
-            </Button>
-          )}
-          {networkInfo?.chainId?.toLowerCase() !== '0xaa36a7' && (
-            <Button
-              onClick={switchToSepoliaEthereum}
-              disabled={switching}
-              variant="outline"
-              className="w-full"
-              size="sm"
-            >
-              {switching ? 'Switching...' : 'Switch to ETH Sepolia'}
-            </Button>
           )}
         </div>
 
         {/* Help Text */}
         <div className="text-xs text-muted-foreground text-center">
           {networkInfo?.isBaseNetwork ? (
-            'Your Basenames will be displayed automatically'
+            'Ready to use xCockpit features'
           ) : (
-            'Basenames only work on Base networks'
+            'This app only works on Base Sepolia testnet'
           )}
         </div>
       </CardContent>

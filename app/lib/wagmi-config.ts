@@ -2,10 +2,7 @@
 
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { 
-  mainnet, 
-  base,
-  baseSepolia,
-  sepolia 
+  baseSepolia
 } from 'wagmi/chains'
 import { http } from 'wagmi'
 
@@ -16,16 +13,13 @@ const appUrl = typeof window !== 'undefined'
   ? window.location.origin 
   : process.env.NEXT_PUBLIC_APP_URL || 'https://202509vibecodingminihackerson.bypp.tech'
 
-// Coinbase Wallet復帰問題を解決するための設定
+// Coinbase Wallet復帰問題を解決するための設定 - Base Sepoliaのみ
 export const config = getDefaultConfig({
   appName: 'xCockpit',
   projectId: projectId,
-  chains: [mainnet, base, baseSepolia, sepolia],
+  chains: [baseSepolia],
   transports: {
-    [mainnet.id]: http(),
-    [base.id]: http(),
     [baseSepolia.id]: http(),
-    [sepolia.id]: http(),
   },
   ssr: true,
 })

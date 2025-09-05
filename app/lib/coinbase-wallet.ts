@@ -73,43 +73,11 @@ class WalletService {
     }
   }
 
-  async switchToSepoliaEthereum(): Promise<void> {
-    try {
-      await this.provider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0xAA36A7' }] // Sepolia Ethereum chain ID (11155111)
-      });
-    } catch (switchError: any) {
-      // If chain doesn't exist, add it
-      if (switchError.code === 4902) {
-        await this.provider.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0xAA36A7',
-            chainName: 'Sepolia',
-            nativeCurrency: {
-              name: 'ETH',
-              symbol: 'ETH',
-              decimals: 18
-            },
-            rpcUrls: ['https://rpc.sepolia.org'],
-            blockExplorerUrls: ['https://sepolia.etherscan.io']
-          }]
-        });
-      } else {
-        throw switchError;
-      }
-    }
-  }
-
-
-  async switchNetwork(network: 'base-sepolia' | 'sepolia-ethereum'): Promise<void> {
+  async switchNetwork(network: 'base-sepolia'): Promise<void> {
     if (network === 'base-sepolia') {
       await this.switchToBaseSepolia();
-    } else if (network === 'sepolia-ethereum') {
-      await this.switchToSepoliaEthereum();
     } else {
-      throw new Error(`Unsupported network: ${network}`);
+      throw new Error(`Unsupported network: ${network}. Only base-sepolia is supported.`);
     }
   }
 
