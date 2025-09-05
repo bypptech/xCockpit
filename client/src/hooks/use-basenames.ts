@@ -161,21 +161,8 @@ export function useBasename(address: string | null): BasenameResult {
 
         if (finalResult) {
           console.log('✅ Basename found:', finalResult, 'for address:', address);
-          console.log('🎯 Basename Resolution Success:', {
-            address,
-            basename: finalResult,
-            ownedBasename: foundOwnedBasename,
-            reverseRecord: reverseRecordExists,
-            method: reverseRecordExists ? 'reverse_lookup' : 'ownership_check'
-          });
         } else {
           console.log('ℹ️ No basename found for address:', address);
-          console.log('🔍 Basename Resolution Failed:', {
-            address,
-            checkedReverseRecord: true,
-            checkedOwnership: true,
-            reverseRecordExists: false
-          });
         }
         
         // 結果をアラートでも表示（デバッグ用）

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BasenameDisplay } from '@/components/basename-display';
-import { useBasename } from '@/hooks/use-basenames';
 import { Wallet, RefreshCw, TrendingUp, TrendingDown, Network } from 'lucide-react';
 import { walletService } from '@/lib/coinbase-wallet';
 import { balanceEvents } from '@/lib/balance-events';
@@ -26,12 +25,18 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
   } | null>(null);
 
   // Basename hook for displaying .base.eth names
-  const { 
-    basename, 
-    ownedBasename, 
-    hasReverseRecord, 
-    loading: basenameLoading 
-  } = useBasename(walletAddress);
+  // Temporarily commented out to debug React Hook error
+  const basename = null;
+  const ownedBasename = null;
+  const hasReverseRecord = false;
+  const basenameLoading = false;
+
+  // const { 
+  //   basename, 
+  //   ownedBasename, 
+  //   hasReverseRecord, 
+  //   loading: basenameLoading 
+  // } = useBasename(walletAddress);
 
   console.log('🎯 BalanceCard - Basename Hook Result:', { 
     basename, 
@@ -40,18 +45,6 @@ export default function BalanceCard({ walletAddress }: BalanceCardProps) {
     basenameLoading, 
     walletAddress 
   });
-
-  // デバッグ用: ウォレット接続状態とBasename検索状況を詳細ログ
-  useEffect(() => {
-    console.log('🔍 BalanceCard Debug - Wallet & Basename Status:', {
-      walletAddress,
-      hasWallet: !!walletAddress,
-      basenameLoading,
-      basename,
-      ownedBasename,
-      hasReverseRecord
-    });
-  }, [walletAddress, basenameLoading, basename, ownedBasename, hasReverseRecord]);
 
   useEffect(() => {
     if (walletAddress) {
