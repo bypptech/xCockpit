@@ -24,8 +24,7 @@ export default function Dashboard() {
     recipient: string;
   } | null>(null);
   const [hasSharedFirstUse, setHasSharedFirstUse] = useState(false);
-  const [lastPlayFee, setLastPlayFee] = useState<string>('0');
-
+  
   const { isConnected: wsConnected, lastMessage } = useWebSocket();
   const { user, isFrameReady, setFrameReady, isMiniApp } = useMiniApp();
   const { triggerAutoShare, shareDeviceInteraction } = useViralSharing();
@@ -42,20 +41,20 @@ export default function Dashboard() {
     enabled: !!walletAddress,
     queryFn: async () => {
       if (!walletAddress) return [];
-
+      
       const response = await fetch(`/api/payments/${walletAddress}`, {
         credentials: 'include'
       });
-
+      
       // Handle 404 gracefully - user doesn't exist yet
       if (response.status === 404) {
         return [];
       }
-
+      
       if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
-
+      
       return response.json();
     }
   });
@@ -94,7 +93,7 @@ export default function Dashboard() {
       }
     } catch (error: any) {
       console.error('Failed to connect wallet:', error);
-
+      
       // Show user-friendly error messages based on environment
       if (error.name === 'WebViewConnectionError' || error.name === 'WebViewTimeoutError') {
         alert(`⚠️ ウォレット接続エラー\n\n${error.message}\n\nモバイルアプリ内では一部機能が制限される場合があります。`);
@@ -117,7 +116,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeviceCommand = async (device: Device, command: string, fees: { [key: string]: number }) => {
+  const handleDeviceCommand = async (device: Device, command: string) => {
     if (!walletAddress) {
       alert('Please connect your wallet first');
       return;
@@ -135,7 +134,7 @@ export default function Dashboard() {
         console.log('✅ Command executed successfully:', result.payment);
         setPaymentState('idle');
         alert(`${command} executed successfully!`);
-
+        
         // Auto-share device interaction success
         if (isMiniApp) {
           triggerAutoShare({
@@ -196,7 +195,7 @@ export default function Dashboard() {
               <div className="flex items-center">
                 <span className="font-bold text-xl text-foreground">xCockpit</span>
               </div>
-
+              
               {/* Network Status Badge */}
               <div className="flex items-center space-x-2 bg-secondary px-3 py-1 rounded-full">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -219,18 +218,18 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+          
           {/* Left Column: Balance & Device Controls */}
           <div className="lg:col-span-2 space-y-6">
             {/* Balance Card - Always visible at the top */}
             <BalanceCard walletAddress={walletAddress} />
-
+            
             {/* Device Cards */}
             {(devices as Device[]).map((device: Device) => (
               <DeviceCard
                 key={device.id}
                 device={device}
-                onCommand={(command) => handleDeviceCommand(device, command, {})}
+                onCommand={handleDeviceCommand}
                 isWalletConnected={!!walletAddress}
                 userSessions={[]}
                 data-testid={`device-card-${device.id}`}
@@ -245,18 +244,17 @@ export default function Dashboard() {
               <SocialFeatures
                 walletAddress={walletAddress}
                 totalPayments={paymentHistory.length}
-                totalAmount={totalSpent}
-                deviceInteractions={deviceInteractions}
-                lastPlayFee={lastPlayFee}
+                totalAmount={paymentHistory.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0).toFixed(6)}
+                deviceInteractions={paymentHistory.length}
               />
             )}
-
-            <TransactionHistory
+            
+            <TransactionHistory 
               transactions={paymentHistory}
               devices={devices as Device[]}
               data-testid="transaction-history"
             />
-
+            
             <SystemStatus
               wsConnected={wsConnected}
               connectedDevices={(devices as Device[]).filter((d: Device) => d.isOnline).length}
