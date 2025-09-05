@@ -15,6 +15,7 @@
     "test:x402": "jest server/tests/x402-enhanced.test.ts"
   },
   "dependencies": {
+    "@base-org/account": "^2.1.0",
     "@coinbase/onchainkit": "^0.38.19",
     "@coinbase/wallet-sdk": "^4.3.7",
     "@hookform/resolvers": "^3.10.0",

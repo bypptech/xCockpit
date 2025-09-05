@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '@/lib/coinbase-wallet';
+import { paymentService } from '@/lib/payment-service-adapter';
 import { X402Client } from '@/lib/x402-client';
 import { balanceEvents } from '@/lib/balance-events';
 import { useMiniApp } from '@/providers/MiniAppProvider';
 import { useViralSharing } from '@/hooks/use-viral-sharing';
 import { BasenameDisplay } from '@/components/basename-display';
+import { BasePayModal } from '@/components/base-pay-modal';
+import { BaseAccountPaymentModal } from '@/components/base-account-payment-modal';
 import { type Device } from '@shared/schema';
 
 interface PaymentModalProps {
@@ -23,10 +26,26 @@ interface PaymentModalProps {
 export default function PaymentModal({ device, command, amount, recipient, walletAddress, onClose }: PaymentModalProps) {
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'confirming' | 'completed' | 'error'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'legacy' | 'base-pay' | 'base-account'>('base-account');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isMiniApp } = useMiniApp();
   const { triggerAutoShare } = useViralSharing();
+
+  useEffect(() => {
+    // Check payment method on mount
+    // Default to Base Account for new implementation
+    const useBaseAccount = process.env.NEXT_PUBLIC_USE_BASE_ACCOUNT !== 'false';
+    const useBasePay = process.env.NEXT_PUBLIC_USE_BASE_PAY === 'true';
+    
+    if (useBaseAccount) {
+      setPaymentMethod('base-account');
+    } else if (useBasePay) {
+      setPaymentMethod('base-pay');
+    } else {
+      setPaymentMethod('legacy');
+    }
+  }, [walletAddress]);
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
@@ -114,6 +133,100 @@ export default function PaymentModal({ device, command, amount, recipient, walle
     paymentMutation.mutate();
   };
 
+  const handleBasePaySuccess = () => {
+    // Refresh balance and queries
+    balanceEvents.triggerBalanceUpdate();
+    queryClient.invalidateQueries({ queryKey: ['/api/payments', walletAddress] });
+    
+    toast({
+      title: "Payment Successful",
+      description: `${command} executed on ${device.name}`,
+      variant: "default",
+    });
+
+    // Auto-share payment success in Mini App
+    if (isMiniApp) {
+      triggerAutoShare({
+        type: 'payment_success',
+        amount: `${amount} USDC`,
+        deviceName: device.name,
+        context: command
+      });
+    }
+
+    onClose();
+  };
+
+  const handleBasePayError = (error: any) => {
+    toast({
+      title: "Payment Failed",
+      description: error.message,
+      variant: "destructive",
+    });
+  };
+
+  // Use Base Account modal (preferred)
+  if (paymentMethod === 'base-account') {
+    return (
+      <BaseAccountPaymentModal
+        isOpen={true}
+        onClose={onClose}
+        amount={amount}
+        recipient={recipient}
+        deviceId={device.id}
+        command={command}
+        walletAddress={walletAddress}
+        onSuccess={(result) => {
+          toast({
+            title: "Payment Successful",
+            description: `${command} executed on ${device.name}`,
+            variant: "default",
+          });
+
+          // Auto-share payment success in Mini App
+          if (isMiniApp) {
+            triggerAutoShare({
+              type: 'payment_success',
+              amount: `${amount} USDC`,
+              deviceName: device.name,
+              context: command
+            });
+          }
+
+          onClose();
+        }}
+        onError={(error) => {
+          toast({
+            title: "Payment Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }}
+      />
+    );
+  }
+
+  // Use Base Pay modal if enabled (fallback)
+  if (paymentMethod === 'base-pay') {
+    return (
+      <BasePayModal
+        isOpen={true}
+        onClose={onClose}
+        amount={amount}
+        recipient={recipient}
+        currency="USDC"
+        metadata={{
+          deviceId: device.id,
+          command: command,
+          userId: walletAddress,
+        }}
+        onSuccess={handleBasePaySuccess}
+        onError={handleBasePayError}
+      />
+    );
+  }
+
+  // Otherwise use legacy payment modal
   const getStatusMessage = () => {
     switch (paymentStatus) {
       case 'idle':
