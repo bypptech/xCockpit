@@ -36,7 +36,13 @@ export class X402Service {
   }
   
   static async calculateDevicePrice(deviceId: string, command: string): Promise<string> {
-    // Load persisted fees from storage
+    // ESP32_002 always uses fixed fee of 0.123 USDC (Gacha Live Demo)
+    if (deviceId === 'ESP32_002') {
+      console.log(`💰 Using fixed fee for ${deviceId}: 0.123 USDC (Gacha Live Demo)`);
+      return '0.123';
+    }
+    
+    // Load persisted fees from storage for other devices
     const fee = await getDeviceFee(deviceId);
     
     if (fee) {
@@ -47,7 +53,7 @@ export class X402Service {
     // Fallback to default pricing if no persisted fee
     const defaultPricing: Record<string, string> = {
       'ESP32_001': '0.5',   // Default Gacha #001 fee
-      'ESP32_002': '0.123', // Fixed Gacha Live Demo fee
+      'ESP32_002': '0.123', // Fixed Gacha Live Demo fee (fallback)
     };
     
     const basePrice = defaultPricing[deviceId] || '0.01';
