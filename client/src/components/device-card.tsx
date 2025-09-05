@@ -146,7 +146,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
           </div>
           <div>
             <h3 className="font-semibold text-lg text-card-foreground" data-testid={`text-device-name-${device.id}`}>
-              {device.id === 'ESP32_001' ? 'Nagesen Gacha' : device.id === 'ESP32_002' ? 'Gacha Demo' : device.name}
+              {device.id === 'ESP32_001' ? 'Nagesen Gacha Live' : device.id === 'ESP32_002' ? 'Gacha Live Demo' : device.name}
             </h3>
             <p className="text-sm text-muted-foreground" data-testid={`text-device-location-${device.id}`}>
               {device.id === 'ESP32_001' || device.id === 'ESP32_002' ? 'Somewhere on the livestream' : device.location}
