@@ -16,6 +16,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
   const [customFee, setCustomFee] = useState<string>('0.000'); // Default fee set to 0.000
   const [savedFee, setSavedFee] = useState<string>('0.000'); // Track saved fee separately
   const [isEditingFee, setIsEditingFee] = useState(false);
+  const [hasSavedChanges, setHasSavedChanges] = useState(false); // Track if changes have been saved
 
   // Load fee from device metadata on mount and when device changes
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
       const feeValue = device.metadata.price as string;
       setCustomFee(feeValue);
       setSavedFee(feeValue);
+      setHasSavedChanges(true); // Mark as saved if fee exists in metadata
     }
   }, [device?.metadata?.price]);
 
@@ -221,6 +223,7 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
                       });
                       if (response.ok) {
                         setSavedFee(customFee); // Update saved fee state
+                        setHasSavedChanges(true); // Mark that changes have been saved
                         setIsEditingFee(false);
                         console.log(`✅ Fee updated to ${fee} USDC for ${device.id}`);
                       } else {
@@ -283,16 +286,17 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
               setTimeout(() => {
                 setCustomFee('0.000');
                 setSavedFee('0.000');
+                setHasSavedChanges(false); // Reset saved changes flag
                 console.log(`🔄 Reset fee to 0.000 for ${device.id} after play`);
               }, 1000); // Reset after 1 second to allow transaction to complete
             }
           }}
-          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready') || (device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(savedFee) <= 0.000)}
+          disabled={!isWalletConnected || !device.isOnline || (device.type === 'gacha' && device.status !== 'ready') || (device.type === 'gacha' && device.id === 'ESP32_001' && (!hasSavedChanges || parseFloat(savedFee) <= 0.000))}
           data-testid={`button-device-command-${device.id}`}
         >
           <i className={`${getDeviceIcon()} mr-2`}></i>
-          {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(savedFee) <= 0.000 ? 'Set Fee to Play' : getCommandLabel()}
-          {device.type === 'gacha' && device.id === 'ESP32_001' && parseFloat(savedFee) > 0.000 && (
+          {device.type === 'gacha' && device.id === 'ESP32_001' && (!hasSavedChanges || parseFloat(savedFee) <= 0.000) ? 'Set Fee to Play' : getCommandLabel()}
+          {device.type === 'gacha' && device.id === 'ESP32_001' && hasSavedChanges && parseFloat(savedFee) > 0.000 && (
             <span className="ml-2 text-sm opacity-90">
               ${(Math.floor(parseFloat(savedFee) * 1000) / 1000).toFixed(3)} USDC
             </span>
