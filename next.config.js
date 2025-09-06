@@ -11,17 +11,6 @@ const nextConfig = {
   // Optimize for mobile and Mini App contexts
   compress: true,
   
-  // Configure redirects
-  async redirects() {
-    return [
-      {
-        source: '/.well-known/farcaster.json',
-        destination: 'https://api.farcaster.xyz/miniapps/hosted-manifest/01991e66-62f2-0168-5f13-ffa509eae12c',
-        permanent: false, // 307 temporary redirect
-      }
-    ]
-  },
-
   // Configure headers for Frame integration
   async headers() {
     return [
