@@ -18,20 +18,7 @@ export async function GET() {
         "description": "Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.",
         "splashImageUrl": "https://202509vibecodingminihackerson.bypp.tech/icon.svg",
         "splashBackgroundColor": "#7c3aed",
-        "webhookUrl": "https://202509vibecodingminihackerson.bypp.tech/api/webhooks/farcaster",
-        "primaryCategory": "games",
-        "tags": ["gacha", "live-streaming", "usdc", "tipping", "gaming"],
-        "tagline": "Tip to Win Real Prizes!",
-        "ogTitle": "Nagesen Gacha Live",
-        "ogDescription": "Control a live Gacha machine with USDC tips and win real capsule prizes delivered to your door!",
-        "ogImageUrl": "https://202509vibecodingminihackerson.bypp.tech/icon.svg",
-        "heroImageUrl": "https://202509vibecodingminihackerson.bypp.tech/icon.svg",
-        "requiredChains": ["ethereum", "base"],
-        "requiredCapabilities": [
-          "wallet",
-          "ethereum"
-        ],
-        "canonicalDomain": "202509vibecodingminihackerson.bypp.tech"
+        "webhookUrl": "https://202509vibecodingminihackerson.bypp.tech/api/webhooks/farcaster"
       }
     ]
   };
