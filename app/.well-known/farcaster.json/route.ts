@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  console.log('🔍 Farcaster manifest requested at:', new Date().toISOString());
+  
   const manifest = {
     "version": "1.0.0",
     "accountAssociation": {
@@ -23,10 +25,14 @@ export async function GET() {
     ]
   };
 
+  console.log('📤 Returning manifest:', JSON.stringify(manifest, null, 2));
+
   return NextResponse.json(manifest, {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=3600'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   });
 }
