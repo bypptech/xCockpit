@@ -78,7 +78,7 @@ export function MiniAppPaymentButton({
   disabled = false
 }: MiniAppPaymentButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const { isMiniApp, isWalletConnected, sendTransaction, requestWalletConnection, shareCast } = useMiniApp();
+  const { isMiniApp, isWalletConnected, sendTransaction, requestWalletConnection, shareCast, openUrl } = useMiniApp();
   const { toast } = useToast();
 
   const handlePayment = async () => {
@@ -159,23 +159,56 @@ export function MiniAppPaymentButton({
     }
   };
 
-  // Fallback for non-miniapp environments
+  // Smart wallet detection and fallback UI
   if (!isMiniApp) {
     return (
+      <div className="space-y-2">
+        <Button
+          onClick={() => {
+            // Redirect to app URL that will open in Farcaster for Smart Wallet
+            const appUrl = `${window.location.origin}?device=${deviceId}&amount=${amount}&command=${command}`;
+            window.open(`https://warpcast.com/~/add-cast-action?actionType=post&name=xCockpit&icon=🚀&postUrl=${encodeURIComponent(appUrl)}`, '_blank');
+          }}
+          disabled={disabled}
+          size="sm"
+          className="gap-2 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Open in Farcaster (Smart Wallet)
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          💡 For MetaMask/WalletConnect, use the main payment button below
+        </p>
+      </div>
+    );
+  }
+
+  // In MiniApp but wallet not connected
+  if (isMiniApp && !isWalletConnected) {
+    return (
       <Button
-        onClick={() => {
-          toast({
-            title: "Mini App Required",
-            description: "This payment method is optimized for Farcaster Mini Apps",
-            variant: "default",
-          });
+        onClick={async () => {
+          try {
+            await requestWalletConnection();
+            toast({
+              title: "Wallet Connected",
+              description: "Smart Wallet connected successfully!",
+              variant: "default",
+            });
+          } catch (error: any) {
+            toast({
+              title: "Connection Failed", 
+              description: error.message || "Failed to connect Smart Wallet",
+              variant: "destructive",
+            });
+          }
         }}
         disabled={disabled}
         size="sm"
         className="gap-2"
       >
-        <ExternalLink className="h-4 w-4" />
-        Open in Farcaster
+        <Wallet className="h-4 w-4" />
+        Connect Smart Wallet
       </Button>
     );
   }
