@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'xCockpit - Web3 IoT Control Dashboard',
   description: 'Control IoT devices with USDC payments on Base Network. Experience the future of Web3 + IoT integration.',
   metadataBase: new URL(process.env.NODE_ENV === 'production' 
-    ? 'https://xcockpit.replit.app' 
+    ? 'https://202509vibecodingminihackerson.bypp.tech' 
     : 'http://localhost:3000'
   ),
   manifest: '/manifest.json',
@@ -47,13 +47,14 @@ export const metadata: Metadata = {
     'fc:frame:button:2:action': 'post',
     'fc:frame:post_url': '/api/frame',
     
-    // Mini App Metadata for Farcaster
-    'fc:miniapp': 'true',
-    'fc:miniapp:name': 'Nagesen Gacha Live',
-    'fc:miniapp:description': 'Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.',
-    'fc:miniapp:icon': '/icon.png',
-    'fc:miniapp:version': '1.0.0',
-    'fc:miniapp:manifest': '/.well-known/farcaster.json',
+    // Mini App Metadata for Farcaster (following official spec)
+    'fc:miniapp': JSON.stringify({
+      "name": "Nagesen Gacha Live",
+      "description": "Live-streamed Gacha machine controllable via USDC tipping",
+      "icon": "https://202509vibecodingminihackerson.bypp.tech/icon.png",
+      "homeUrl": "https://202509vibecodingminihackerson.bypp.tech",
+      "manifestVersion": "1.0.0"
+    }),
     
     // Additional Mini App Metadata
     'miniapp:name': 'Nagesen Gacha Live',

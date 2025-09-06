@@ -7,6 +7,7 @@ import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit'
 import { config } from './lib/wagmi-config'
 import { MiniAppProvider } from './components/MiniAppProvider'
+import { WalletEnvironmentProvider } from './components/WalletEnvironmentDetector'
 import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient({
@@ -45,7 +46,9 @@ export function Providers({ children }: ProvidersProps) {
           showRecentTransactions={true}
         >
           <MiniAppProvider>
-            {children}
+            <WalletEnvironmentProvider>
+              {children}
+            </WalletEnvironmentProvider>
           </MiniAppProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
