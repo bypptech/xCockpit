@@ -7,6 +7,7 @@ import PaymentModal from '@/components/payment-modal';
 import TransactionHistory from '@/components/transaction-history';
 import SystemStatus from '@/components/system-status';
 import SocialFeatures from '@/components/social-features';
+import VideoStream from '@/components/video-stream';
 import { useWebSocket } from '@/lib/websocket';
 import { walletService } from '@/lib/coinbase-wallet';
 import { X402Client } from '@/lib/x402-client';
@@ -228,10 +229,15 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
 
-          {/* Left Column: Balance & Device Controls */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Left Column: Video Stream (2x width) */}
+          <div className="xl:col-span-2">
+            <VideoStream className="sticky top-4" />
+          </div>
+
+          {/* Center Column: Balance & Device Controls */}
+          <div className="xl:col-span-2 space-y-6">
             {/* Balance Card - Always visible at the top */}
             <BalanceCard walletAddress={walletAddress} />
 
@@ -249,7 +255,7 @@ export default function Dashboard() {
           </div>
 
           {/* Right Column: Social, History & Status */}
-          <div className="space-y-6">
+          <div className="xl:col-span-1 space-y-6">
             {/* Social Features - only show when wallet connected or in Mini App */}
             {(walletAddress || isMiniApp) && (
               <SocialFeatures
