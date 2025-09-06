@@ -70,9 +70,20 @@ export default function PaymentModal({ device, command, amount, recipient, walle
         // Invalidate payment history to refresh transactions
         queryClient.invalidateQueries({ queryKey: ['/api/payments', walletAddress] });
 
+        // Map device names consistently
+        const getDisplayName = (device: Device) => {
+          if (device.id === 'ESP32_001' || device.name === 'Smart Gacha #001') {
+            return 'Nagesen Gacha Live';
+          }
+          if (device.id === 'ESP32_002' || device.name === 'Smart Gacha #002') {
+            return 'Gacha Live Demo';
+          }
+          return device.name;
+        };
+
         toast({
           title: "Payment Successful",
-          description: `${command} executed on ${device.name}`,
+          description: `${command} executed on ${getDisplayName(device)}`,
           variant: "default",
         });
 
