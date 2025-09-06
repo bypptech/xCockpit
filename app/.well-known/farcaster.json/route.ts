@@ -5,6 +5,16 @@ export async function GET() {
 
   const manifest = {
     "version": "1.0.0",
+    "name": "Nagesen Gacha Live",
+    "description": "Live-streamed Gacha machine controllable via USDC tipping",
+    "icon": "https://202509vibecodingminihackerson.bypp.tech/icon.svg",
+    "homeUrl": "https://202509vibecodingminihackerson.bypp.tech",
+    "webhookUrl": "https://202509vibecodingminihackerson.bypp.tech/api/webhooks/farcaster",
+    "accountAssociation": {
+      "header": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9",
+      "payload": "eyJkb21haW4iOiIyMDI1MDl2aWJlY29kaW5nbWluaWhhY2tlcnNvbi5ieXBwLnRlY2giLCJzdWJqZWN0IjoiZmlkOjEzMjIwNDYiLCJpYXQiOjE3NTcxMzYwMzUsImV4cCI6MTc4ODY3MjAzNX0",
+      "signature": "REQUIRES_FARCASTER_PRIVATE_KEY_SIGNATURE"
+    },
     "miniApps": [
       {
         "version": "1",
