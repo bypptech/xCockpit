@@ -20,13 +20,20 @@ export default function TransactionHistory({ transactions, devices = [] }: Trans
     const device = devices.find(d => d.id === deviceId);
     if (device) {
       // Map specific devices to their display names
-      if (device.name === 'Smart Gacha #001' || device.id === 'ESP32_001') {
+      if (device.name === 'Smart Gacha #001' || device.id === 'ESP32_001' || device.id === 'Smart Gacha #001') {
         return 'Nagesen Gacha Live';
       }
-      if (device.name === 'Smart Gacha #002' || device.id === 'ESP32_002') {
+      if (device.name === 'Smart Gacha #002' || device.id === 'ESP32_002' || device.id === 'Smart Gacha #002') {
         return 'Gacha Live Demo';
       }
       return device.name;
+    }
+    // Handle cases where device is not found by ID
+    if (deviceId === 'Smart Gacha #001') {
+      return 'Nagesen Gacha Live';
+    }
+    if (deviceId === 'Smart Gacha #002') {
+      return 'Gacha Live Demo';
     }
     return 'Unknown Device';
   };
