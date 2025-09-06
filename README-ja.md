@@ -1,10 +1,10 @@
-# Nagesen Gacha Live - 投げ銭ガチャライブ
+# Nagesen Gacha Live (xCockpit) - 投げ銭ガチャライブ
 
 [English Ver README is here](README-ja.md) 
 
 ## 概要
 
-Nagesen Gacha Liveは、ブロックチェーン決済を活用した革新的なIoTデバイス制御プラットフォームです。ESP32ベースのガチャマシンを、Base Network上のUSDC決済を通じてリモート制御できます。X402プロトコル（HTTP 402 Payment Required）を実装し、マイクロペイメントによるデバイス制御を実現しています。
+Nagesen Gacha Live (xCockpit)は、ブロックチェーン決済を活用した革新的なIoTデバイス制御プラットフォームです。ESP32ベースのガチャマシンを、Base Network上のUSDC決済を通じてリモート制御できます。X402プロトコル（HTTP 402 Payment Required）を実装し、マイクロペイメントによるデバイス制御を実現しています。
 
 ## 主な特徴
 
