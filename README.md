@@ -1,10 +1,10 @@
-# Nagesen Gacha Live - Live Gacha with USDC Tips
+# Nagesen Gacha Live (xCockpit) - Live Gacha with USDC Tips
 
 [日本語版 README はこちら](README-ja.md) 
 
 ## Overview
 
-Nagesen Gacha Live is an innovative IoT device control platform powered by blockchain payments. It enables remote control of ESP32-based gacha machines through USDC payments on Base Network. Implementing the X402 protocol (HTTP 402 Payment Required), it realizes device control through micropayments.
+Nagesen Gacha Live (xCockpit) is an innovative IoT device control platform powered by blockchain payments. It enables remote control of ESP32-based gacha machines through USDC payments on Base Network. Implementing the X402 protocol (HTTP 402 Payment Required), it realizes device control through micropayments.
 
 ## Key Features
 
