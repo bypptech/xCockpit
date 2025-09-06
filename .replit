@@ -8,7 +8,7 @@ channel = "stable-25_05"
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+run = ["sh", "-c", "npm run build && npm start"]
 
 [[ports]]
 localPort = 3001
@@ -74,7 +74,7 @@ exposeLocalhost = true
 PORT = "5000"
 
 [workflows]
-runButton = "Project"
+runButton = "Start Full Application"
 
 [[workflows.workflow]]
 name = "Project"
@@ -93,6 +93,19 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Start Full Application"
+author = 38516204
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd app && npm run dev"
 
 [agent]
 expertMode = true
