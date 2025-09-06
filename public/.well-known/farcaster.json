@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
   "accountAssociation": {
-    "header": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9",
-    "payload": "eyJkb21haW4iOiIyMDI1MDl2aWJlY29kaW5nbWluaWhhY2tlcnNvbi5ieXBwLnRlY2giLCJzdWJqZWN0IjoiZmlkOjEyMzQ1IiwiaWF0IjoxNzU3MTIzNjU3LCJleHAiOjE3ODg2NTk2NTd9",
-    "signature": "REQUIRES_FARCASTER_PRIVATE_KEY_SIGNATURE"
+    "header": "eyJmaWQiOjEzMjIwNDYsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgxQUZFNjc2RDBCRjAyYzk2OTM2YzREMzQ3MTc5MDY0QkRiMWU5RUY4In0",
+    "payload": "eyJkb21haW4iOiIyMDI1MDl2aWJlY29kaW5nbWluaWhhY2tlcnNvbi5ieXBwLnRlY2gifQ",
+    "signature": "MHg1MDhhNWVlMGIwMmMxMmQxYmQxZDhmMDhkZWJiMTQyODZhOWE1YjhlOGFhNTJiNzE5NWMyOGVmODBjNjNiNDMyNTFjOGJjMzYwODVlMGE3NjU4NWU1ZmJjNjAzNzcxNTRiOGM0ZWNlNGRkNDEyMzhhZGNiNjgwM2ZjMTlkNjY5YzFj"
   },
   "miniApps": [
     {
