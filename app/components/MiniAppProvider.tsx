@@ -226,7 +226,7 @@ export function MiniAppProvider({ children }: MiniAppProviderProps) {
     if (sdk && isMiniApp) {
       try {
         // Use composeCast action which is available in the SDK
-        await sdk.actions.composeCast({ text, embeds: embeds || [] });
+        await sdk.actions.composeCast({ text, embeds: (embeds || []).slice(0, 2) as [] | [string] | [string, string] });
         console.log('📤 Cast shared via SDK');
         return;
       } catch (error) {

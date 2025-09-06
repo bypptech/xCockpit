@@ -1,26 +1,62 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { useMiniApp } from './MiniAppProvider';
-import { Loader2, Wallet, ExternalLink } from 'lucide-react';
-import { encodeFunctionData, parseUnits } from 'viem';
 
+// Fallback components for environments without shadcn
+const Button = ({ children, onClick, disabled, className, ...props }: any) => (
+  <button 
+    onClick={onClick} 
+    disabled={disabled} 
+    className={`px-4 py-2 rounded font-medium ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
+    {...props}
+  >
+    {children}
+  </button>
+);
+
+const useToast = () => ({
+  toast: ({ title, description, variant }: any) => {
+    console.log(`Toast: ${title} - ${description} (${variant || 'default'})`);
+  }
+});
+
+// Simple icon components
+const Loader2 = ({ className }: { className?: string }) => (
+  <span className={`inline-block animate-spin ${className}`}>⟳</span>
+);
+const Wallet = ({ className }: { className?: string }) => (
+  <span className={className}>💰</span>
+);
+const ExternalLink = ({ className }: { className?: string }) => (
+  <span className={className}>🔗</span>
+);
 // USDC contract address on Base Mainnet
 const USDC_CONTRACT_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 // USDC contract address on Base Sepolia for testing
 const USDC_CONTRACT_BASE_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
-// ERC-20 transfer function ABI
-const TRANSFER_ABI = {
-  name: 'transfer',
-  type: 'function',
-  inputs: [
-    { name: 'to', type: 'address' },
-    { name: 'amount', type: 'uint256' }
-  ]
-} as const;
+// ERC-20 transfer function signature: transfer(address,uint256)
+const TRANSFER_FUNCTION_SIGNATURE = '0xa9059cbb';
+
+// Helper function to encode ERC-20 transfer data
+function encodeTransferData(to: string, amount: string): string {
+  // Remove 0x prefix from address and pad to 32 bytes
+  const addressParam = to.slice(2).padStart(64, '0');
+  
+  // Convert amount to BigInt and then to hex, pad to 32 bytes
+  const amountBigInt = BigInt(amount);
+  const amountParam = amountBigInt.toString(16).padStart(64, '0');
+  
+  return `${TRANSFER_FUNCTION_SIGNATURE}${addressParam}${amountParam}`;
+}
+
+// Helper function to convert USDC amount (with 6 decimals) to units
+function parseUSDCUnits(amount: string): string {
+  const amountNum = parseFloat(amount);
+  const units = Math.floor(amountNum * 1000000); // 6 decimals for USDC
+  return units.toString();
+}
 
 interface MiniAppPaymentButtonProps {
   amount: string;
@@ -55,6 +91,11 @@ export function MiniAppPaymentButton({
       }
 
       // Check if we're on the correct network (Base or Base Sepolia)
+      const { sdk } = useMiniApp();
+      if (!sdk) {
+        throw new Error('MiniApp SDK not available');
+      }
+
       const chainId = await sdk.wallet.ethProvider.request({ method: 'eth_chainId' });
       const isBaseMainnet = chainId === '0x2105';
       const isBaseSepolia = chainId === '0x14a34' || chainId === '0x14A34';
@@ -72,15 +113,9 @@ export function MiniAppPaymentButton({
       // Use correct USDC contract based on network
       const usdcContract = isBaseMainnet ? USDC_CONTRACT_BASE : USDC_CONTRACT_BASE_SEPOLIA;
       
-      // Convert amount to USDC units (6 decimals)
-      const amountInUnits = parseUnits(amount, 6);
-      
-      // Encode ERC-20 transfer function call
-      const transferData = encodeFunctionData({
-        abi: [TRANSFER_ABI],
-        functionName: 'transfer',
-        args: [recipient as `0x${string}`, amountInUnits]
-      });
+      // Convert amount to USDC units (6 decimals) and encode transfer data
+      const amountInUnits = parseUSDCUnits(amount);
+      const transferData = encodeTransferData(recipient, amountInUnits);
 
       // Send USDC transfer transaction
       const txHash = await sdk.wallet.ethProvider.request({
