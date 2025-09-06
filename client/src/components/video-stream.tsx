@@ -184,7 +184,7 @@ export default function VideoStream({
         <div className="absolute top-2 left-2 flex items-center space-x-2">
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
           <span className="text-xs text-white bg-black/50 px-2 py-1 rounded">
-            {isConnected ? `LIVE (${frameCount} frames)` : 'Connecting...'}
+            {isConnected ? 'LIVE' : 'Connecting...'}
           </span>
         </div>
 

@@ -19,14 +19,19 @@ export default function DeviceCard({ device, onCommand, isWalletConnected, userS
   const [hasSavedChanges, setHasSavedChanges] = useState(false); // Track if changes have been saved
 
   // Load fee from device metadata on mount and when device changes
+  // ESP32_001 should not use cached values, always start with 0.000
   useEffect(() => {
+    if (device.id === 'ESP32_001') {
+      // Skip loading cached fee for ESP32_001, always use 0.000
+      return;
+    }
     if (device?.metadata?.price) {
       const feeValue = device.metadata.price as string;
       setCustomFee(feeValue);
       setSavedFee(feeValue);
       setHasSavedChanges(true); // Mark as saved if fee exists in metadata
     }
-  }, [device?.metadata?.price]);
+  }, [device?.metadata?.price, device.id]);
 
   const getDeviceIcon = () => {
     switch (device.type) {

@@ -10,20 +10,9 @@ import frameRoutes from "./routes/frame";
 
 let wsService: WebSocketService;
 
-// Helper function to get device fee
+// Helper function to get device fee - Always returns 0.000
 async function getDeviceFee(deviceId: string): Promise<string> {
-  try {
-    const device = await storage.getDevice(deviceId);
-    if (!device) {
-      throw new Error("Device not found");
-    }
-    // Default to 0.01 if no price is set or customFee is false
-    const fee = device.metadata?.customFee ? parseFloat(device.metadata.price) : 0.01;
-    return fee.toFixed(3); // Return as string with 3 decimal places
-  } catch (error) {
-    console.error(`Failed to get fee for device ${deviceId}:`, error);
-    return "0.01"; // Fallback to default fee
-  }
+  return "0.000"; // Always return 0.000 as per new specification
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
