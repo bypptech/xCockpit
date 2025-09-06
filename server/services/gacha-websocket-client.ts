@@ -156,7 +156,7 @@ class GachaWebSocketClient {
       headers: {
         'x-auth-token': 'payment-verified-' + Date.now(),
         'bypp-username': displayName,  // Basename or shortened wallet address
-        'bypp-token-amount': `${amountStr}$`  // 決済金額 (100$ format)
+        'bypp-token-amount': `$${amountStr} USDC`  // 決済金額 (100$ format)
       },
       payload: {
         walletAddress,
