@@ -1,54 +1,33 @@
 {
-  "name": "xCockpit",
-  "description": "Web3 IoT Control Dashboard - Control ESP32 devices with USDC payments through HTTP 402 protocol",
   "version": "1.0.0",
-  "icon": "/icon.png",
-  "url": "https://xcockpit.replit.app",
-  "author": {
-    "name": "xCockpit Team",
-    "url": "https://xcockpit.replit.app"
+  "accountAssociation": {
+    "header": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9",
+    "payload": "eyJkb21haW4iOiIyMDI1MDl2aWJlY29kaW5nbWluaWhhY2tlcnNvbi5ieXBwLnRlY2giLCJzdWJqZWN0IjoiZmlkOjEyMzQ1In0",
+    "signature": "placeholder_signature_needs_to_be_replaced"
   },
-  "manifest_version": "1.0",
-  "miniapp": {
-    "name": "xCockpit",
-    "description": "Web3-powered IoT device control dashboard with cryptocurrency payments",
-    "icon": "/icon.png",
-    "version": "1.0.0",
-    "dimensions": {
-      "width": 424,
-      "height": 695
-    },
-    "features": [
-      "payment",
-      "wallet_connection",
-      "real_time_updates",
-      "device_control"
-    ],
-    "supported_currencies": ["USDC"],
-    "networks": ["base", "base-sepolia"],
-    "permissions": [
-      "wallet_access",
-      "payment_requests",
-      "user_profile"
-    ]
-  },
-  "webhooks": {
-    "payment_complete": "/api/webhooks/payment",
-    "device_action": "/api/webhooks/device"
-  },
-  "frame": {
-    "version": "vNext",
-    "image": "/api/frame/image",
-    "buttons": [
-      {
-        "text": "🚀 Launch xCockpit",
-        "action": "link"
-      },
-      {
-        "text": "💰 Make Payment",
-        "action": "post"
+  "miniApps": [
+    {
+      "manifestVersion": "1.0.0",
+      "name": "xCockpit",
+      "description": "Web3 IoT Control Dashboard - Control ESP32 devices with USDC payments through HTTP 402 protocol",
+      "icon": "https://202509vibecodingminihackerson.bypp.tech/icon.png",
+      "homeUrl": "https://202509vibecodingminihackerson.bypp.tech",
+      "splashImageUrl": "https://202509vibecodingminihackerson.bypp.tech/splash.png",
+      "splashBackgroundColor": "#000000",
+      "webhookUrl": "https://202509vibecodingminihackerson.bypp.tech/api/webhooks/farcaster",
+      "requiredChains": ["ethereum", "base"],
+      "requiredCapabilities": [
+        "wallet",
+        "ethereum"
+      ],
+      "metadata": {
+        "author": "xCockpit Team",
+        "version": "1.0.0",
+        "category": "finance",
+        "keywords": ["web3", "payments", "iot", "farcaster"],
+        "supportUrl": "https://202509vibecodingminihackerson.bypp.tech/support",
+        "privacyUrl": "https://202509vibecodingminihackerson.bypp.tech/privacy"
       }
-    ],
-    "post_url": "/api/frame"
-  }
+    }
+  ]
 }
