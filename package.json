@@ -18,6 +18,7 @@
     "@base-org/account": "^2.1.0",
     "@coinbase/onchainkit": "^0.38.19",
     "@coinbase/wallet-sdk": "^4.3.7",
+    "@farcaster/miniapp-sdk": "^0.1.10",
     "@hookform/resolvers": "^3.10.0",
     "@jest/globals": "^30.1.1",
     "@jridgewell/trace-mapping": "^0.3.25",

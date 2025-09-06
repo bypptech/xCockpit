@@ -39,17 +39,28 @@ export const metadata: Metadata = {
     
     // Farcaster Frame Meta Tags for Mini App
     'fc:frame': 'vNext',
-    'fc:frame:image': '/frame-image.png',
+    'fc:frame:image': '/api/frame/image',
     'fc:frame:image:aspect_ratio': '1.91:1',
     'fc:frame:button:1': '🚀 Launch xCockpit',
     'fc:frame:button:1:action': 'link',
+    'fc:frame:button:2': '💰 Make Payment',
+    'fc:frame:button:2:action': 'post',
     'fc:frame:post_url': '/api/frame',
     
-    // Mini App Metadata
+    // Mini App Metadata for Farcaster
+    'fc:miniapp': 'true',
+    'fc:miniapp:name': 'xCockpit',
+    'fc:miniapp:description': 'Web3 IoT Control Dashboard - Control ESP32 devices with USDC payments',
+    'fc:miniapp:icon': '/icon.png',
+    'fc:miniapp:version': '1.0.0',
+    'fc:miniapp:manifest': '/.well-known/farcaster.json',
+    
+    // Additional Mini App Metadata
     'miniapp:name': 'xCockpit',
     'miniapp:description': 'Web3 IoT Control Dashboard',
     'miniapp:icon': '🚀',
     'miniapp:version': '1.0.0',
+    'miniapp:dimensions': '424x695',
   },
 }
 

@@ -1,0 +1,54 @@
+{
+  "name": "xCockpit",
+  "description": "Web3 IoT Control Dashboard - Control ESP32 devices with USDC payments through HTTP 402 protocol",
+  "version": "1.0.0",
+  "icon": "/icon.png",
+  "url": "https://xcockpit.replit.app",
+  "author": {
+    "name": "xCockpit Team",
+    "url": "https://xcockpit.replit.app"
+  },
+  "manifest_version": "1.0",
+  "miniapp": {
+    "name": "xCockpit",
+    "description": "Web3-powered IoT device control dashboard with cryptocurrency payments",
+    "icon": "/icon.png",
+    "version": "1.0.0",
+    "dimensions": {
+      "width": 424,
+      "height": 695
+    },
+    "features": [
+      "payment",
+      "wallet_connection",
+      "real_time_updates",
+      "device_control"
+    ],
+    "supported_currencies": ["USDC"],
+    "networks": ["base", "base-sepolia"],
+    "permissions": [
+      "wallet_access",
+      "payment_requests",
+      "user_profile"
+    ]
+  },
+  "webhooks": {
+    "payment_complete": "/api/webhooks/payment",
+    "device_action": "/api/webhooks/device"
+  },
+  "frame": {
+    "version": "vNext",
+    "image": "/api/frame/image",
+    "buttons": [
+      {
+        "text": "🚀 Launch xCockpit",
+        "action": "link"
+      },
+      {
+        "text": "💰 Make Payment",
+        "action": "post"
+      }
+    ],
+    "post_url": "/api/frame"
+  }
+}

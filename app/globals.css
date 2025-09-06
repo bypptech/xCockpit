@@ -87,6 +87,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  max-width: 424px;
+  margin: 0 auto;
 }
 
 .mini-app-content {
@@ -94,6 +96,50 @@ body {
   padding: 1rem;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+/* Mini App responsive design */
+@media (max-width: 424px) {
+  .mini-app-content {
+    padding: 0.75rem;
+  }
+  
+  /* Compact card layouts */
+  .device-card {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Smaller buttons for tight spaces */
+  .btn-compact {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 40px;
+  }
+  
+  /* Responsive text sizing */
+  .text-responsive {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Touch-friendly improvements */
+button, a[role="button"], .interactive {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+/* Prevent zoom on input focus in mobile */
+input, select, textarea {
+  font-size: 16px;
+}
+
+@media (max-width: 424px) {
+  input, select, textarea {
+    font-size: 14px;
+  }
 }
 
 /* Social features styling */
