@@ -1,10 +1,13 @@
 'use client'
 
+import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactNode } from 'react'
 import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit'
 import { config } from './lib/wagmi-config'
+import { MiniAppProvider } from './components/MiniAppProvider'
+import { WalletEnvironmentProvider } from './components/WalletEnvironmentDetector'
 import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient({
@@ -42,7 +45,11 @@ export function Providers({ children }: ProvidersProps) {
           modalSize="compact"
           showRecentTransactions={true}
         >
-          {children}
+          <MiniAppProvider>
+            <WalletEnvironmentProvider>
+              {children}
+            </WalletEnvironmentProvider>
+          </MiniAppProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { MiniAppProvider } from './MiniAppProvider';
+import { MiniAppProvider, useMiniApp } from './MiniAppProvider';
 import { Providers } from '../providers';
 import { GachaFeeCustomizer } from './gacha-fee-customizer';
+import { MiniAppWalletConnector } from './miniapp-wallet-connector';
+import { MiniAppPaymentProcessor } from './miniapp-payment-processor';
 
 // Simple placeholder components
 const SimpleBasenameDisplay = ({ address, className }: { address: string; className?: string }) => (
@@ -74,11 +76,14 @@ function DashboardContent() {
   const [gachaFees, setGachaFees] = useState<{ [deviceId: string]: number }>({});
   const [isPlayingGacha, setIsPlayingGacha] = useState<{ [deviceId: string]: boolean }>({});
   
-  // Placeholder for basename functionality
-  const basename = null;
-  const ownedBasename = null;
-  const hasReverseRecord = false;
-  const basenameLoading = false;
+  // Use MiniApp context for enhanced functionality
+  const { 
+    isMiniApp, 
+    isWalletConnected, 
+    user, 
+    isFrameReady,
+    shareCast 
+  } = useMiniApp();
   
   // ウォレットアドレスが変わるたびにログ出力
   useEffect(() => {
@@ -308,10 +313,26 @@ function DashboardContent() {
             </div>
           )}
           
-          <div className="mt-4 flex justify-center">
-            <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-4 py-2 rounded-full text-sm font-medium">
-              🚀 Mini App Enabled
+          <div className="mt-4 flex justify-center gap-4">
+            <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+              isMiniApp 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+            }`}>
+              {isMiniApp ? '🚀 Farcaster Mini App' : '🌐 Web App'}
             </div>
+            
+            {user && (
+              <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium">
+                👤 {user.displayName}
+              </div>
+            )}
+            
+            {isFrameReady && (
+              <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-4 py-2 rounded-full text-sm font-medium">
+                ⚡ Frame Ready
+              </div>
+            )}
           </div>
         </div>
 
@@ -319,12 +340,18 @@ function DashboardContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Wallet & Controls */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold mb-4">Wallet Connection</h3>
-              <WalletConnection 
-                walletAddress={walletAddress}
-                onConnect={handleWalletConnect}
-                onDisconnect={handleWalletDisconnect}
+            {/* Enhanced Mini App Wallet Connection */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <MiniAppWalletConnector 
+                onConnect={(address) => {
+                  setWalletAddress(address);
+                  console.log('🎯 Wallet connected via Mini App:', address);
+                }}
+                onDisconnect={() => {
+                  setWalletAddress(null);
+                  console.log('🔌 Wallet disconnected');
+                }}
+                showBalance={true}
               />
             </div>
             
@@ -339,6 +366,25 @@ function DashboardContent() {
               walletAddress={walletAddress}
               className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
             />
+
+            {/* Enhanced Mini App Payment Processor */}
+            {(walletAddress || isWalletConnected) && (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <MiniAppPaymentProcessor
+                  defaultAmount="0.001"
+                  tokenSymbol="ETH"
+                  onSuccess={(txHash) => {
+                    console.log('💰 Payment successful:', txHash);
+                    if (isMiniApp) {
+                      shareCast(`🎉 Just made a payment via @xCockpit! Tx: ${txHash.slice(0, 10)}...`);
+                    }
+                  }}
+                  onError={(error) => {
+                    console.error('💥 Payment failed:', error);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right Column - Devices */}
