@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import * as fs from 'fs';
+import { getBasename, formatAddress } from '../utils/basename-resolver';
 
 // Load environment variables
 const __filename = fileURLToPath(import.meta.url);
@@ -129,10 +130,15 @@ class GachaWebSocketClient {
       return false;
     }
 
-    // Format wallet address for display (abbreviated) - "bakemonio" style
-    const shortenedWallet = walletAddress.toLowerCase().startsWith('0x')
-      ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-      : walletAddress;
+    // Get Basename and format address using the same logic as client-side
+    const basename = await getBasename(walletAddress);
+    const displayName = formatAddress(walletAddress, basename);
+    
+    if (basename) {
+      console.log(`🎯 Using Basename for display: ${basename}`);
+    } else {
+      console.log(`📝 No Basename found, using formatted address: ${displayName}`);
+    }
 
     // Parse amount to ensure it's a number
     const amount = parseFloat(tokenAmount);
@@ -149,7 +155,7 @@ class GachaWebSocketClient {
       deviceId,
       headers: {
         'x-auth-token': 'payment-verified-' + Date.now(),
-        'bypp-username': shortenedWallet,  // ウォレットアドレスの省略記法
+        'bypp-username': displayName,  // Basename or shortened wallet address
         'bypp-token-amount': `${amountStr}$`  // 決済金額 (100$ format)
       },
       payload: {
@@ -163,7 +169,7 @@ class GachaWebSocketClient {
     };
 
     console.log(`💰 Sending payment command to device ${deviceId}:`);
-    console.log(`  - bypp-username: ${shortenedWallet}`);
+    console.log(`  - bypp-username: ${displayName}`);
     console.log(`  - bypp-token-amount: ${amountStr}$`);
     this.send(message);
     return true;
