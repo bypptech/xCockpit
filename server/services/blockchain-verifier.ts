@@ -41,6 +41,18 @@ export class BlockchainVerifier {
     from?: string;
     error?: string;
   }> {
+    // Mock mode for testing
+    if (process.env.MOCK_BLOCKCHAIN === 'true') {
+      console.log('🧪 Mock blockchain verification enabled');
+      return {
+        verified: true,
+        confirmations: 12,
+        actualAmount: options.minAmount,
+        blockNumber: 123456,
+        from: '0x1234567890123456789012345678901234567890'
+      };
+    }
+    
     try {
       const { txHash, expectedTo, minAmount, minConfirmations = 0 } = options;
       

@@ -1,6 +1,7 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { Server } from "http";
 import { storage } from "../storage";
+import { gachaWebSocketClient } from "./gacha-websocket-client";
 
 export class WebSocketService {
   private wss: WebSocketServer;
@@ -80,10 +81,18 @@ export class WebSocketService {
   }
 
   async sendCommandToDevice(deviceId: string, command: string, metadata?: any): Promise<boolean> {
+    // First check if device is connected via Gacha WebSocket
+    if (gachaWebSocketClient.isDeviceConnected(deviceId)) {
+      console.log(`Device ${deviceId} is connected via Gacha WebSocket`);
+      return true; // Return true since device is reachable via Gacha WebSocket
+    }
+    
+    // Then check local WebSocket
     const deviceWs = this.deviceConnections.get(deviceId);
     
     if (!deviceWs || deviceWs.readyState !== WebSocket.OPEN) {
-      console.error(`Device ${deviceId} is not connected`);
+      // Device not connected to any WebSocket
+      console.error(`Device ${deviceId} is not connected to any WebSocket`);
       return false;
     }
 

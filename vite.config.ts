@@ -29,13 +29,28 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    hmr: {
+      overlay: true,  // エラーオーバーレイを表示
+    },
+    watch: {
+      usePolling: true,  // ファイルシステムの変更を確実に検出
+      interval: 100,     // ポーリング間隔（ミリ秒）
+    },
     proxy: {
       '/api': {
-        target: process.env.PORT ? `http://localhost:${process.env.PORT}` : 'http://localhost:5001',
+        target: process.env.VITE_BACKEND_PORT 
+          ? `http://localhost:${process.env.VITE_BACKEND_PORT}` 
+          : process.env.PORT 
+          ? `http://localhost:${process.env.PORT}` 
+          : 'http://localhost:5001',
         changeOrigin: true,
       },
       '/ws': {
-        target: process.env.PORT ? `ws://localhost:${process.env.PORT}` : 'ws://localhost:5001',
+        target: process.env.VITE_BACKEND_PORT 
+          ? `ws://localhost:${process.env.VITE_BACKEND_PORT}` 
+          : process.env.PORT 
+          ? `ws://localhost:${process.env.PORT}` 
+          : 'ws://localhost:5001',
         ws: true,
       }
     },

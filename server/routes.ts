@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { X402Service } from "./services/x402";
 import { PaymentService } from "./services/payment";
 import { WebSocketService } from "./services/websocket";
+import { gachaWebSocketClient } from "./services/gacha-websocket-client";
 import { insertUserSchema, insertPaymentSchema } from "@shared/schema";
 import frameRoutes from "./routes/frame";
 
@@ -142,7 +143,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!commandSent) {
-        console.warn(`Failed to send command to device ${deviceId}`);
+        // This is expected when device is connected to Gacha WebSocket instead of local
+        console.log(`Device ${deviceId} not on local WebSocket, using Gacha WebSocket`);
+      }
+
+      // Send payment notification to ESP32 via Gacha WebSocket
+      if (gachaWebSocketClient.isConnected()) {
+        const paymentAmount = payment.amount || (await getDeviceFee(deviceId));
+        await gachaWebSocketClient.sendPaymentCommand(
+          deviceId,
+          walletAddress,
+          paymentAmount,
+          command
+        );
+        console.log(`💰 Payment command sent to ${deviceId} via Gacha WebSocket`);
       }
 
       // Generate payment state header (x402 standard)

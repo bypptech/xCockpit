@@ -5,7 +5,9 @@
       "Bash(curl:*)",
       "Bash(grep:*)",
       "WebFetch(domain:localhost)",
-      "Bash(PORT=5001 npm run dev)"
+      "Bash(PORT=5001 npm run dev)",
+      "Bash(MOCK_BLOCKCHAIN=true PORT=5001 npm run dev)",
+      "Bash(./test-payment.sh:*)"
     ],
     "deny": [],
     "ask": []
