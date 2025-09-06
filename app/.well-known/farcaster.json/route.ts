@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const manifest = {
-    name: "x402 Gacha Live",
-    description: "Live-streamed IoT Gacha machine controllable via USDC payments. Experience real-time gaming with crypto-enabled physical devices.",
+    name: "Nagesen Gacha Live",
+    description: "Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.",
     icon: "🎰",
     version: "1.0.3",
     url: "https://202509vibecodingminihackerson.bypp.tech",

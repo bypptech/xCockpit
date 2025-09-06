@@ -20,7 +20,7 @@ router.get('/frame', (req, res) => {
     errors: envValidation.errors,
     manifest: {
       name: "Nagesen Gacha Live",
-      description: "Live-streamed Gacha machine controllable via USDC tipping",
+      description: "Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.",
       url: APP_URL,
       icon: "/icon.png"
     },

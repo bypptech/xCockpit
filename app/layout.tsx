@@ -49,16 +49,16 @@ export const metadata: Metadata = {
     
     // Mini App Metadata for Farcaster
     'fc:miniapp': 'true',
-    'fc:miniapp:name': 'xCockpit',
-    'fc:miniapp:description': 'Web3 IoT Control Dashboard - Control ESP32 devices with USDC payments',
+    'fc:miniapp:name': 'Nagesen Gacha Live',
+    'fc:miniapp:description': 'Live-streamed Gacha machine controllable via USDC tipping. Viewers send USDC tips from their devices, trigger the Gacha machine to operate remotely, and receive capsule prizes.',
     'fc:miniapp:icon': '/icon.png',
     'fc:miniapp:version': '1.0.0',
     'fc:miniapp:manifest': '/.well-known/farcaster.json',
     
     // Additional Mini App Metadata
-    'miniapp:name': 'xCockpit',
-    'miniapp:description': 'Web3 IoT Control Dashboard',
-    'miniapp:icon': '🚀',
+    'miniapp:name': 'Nagesen Gacha Live',
+    'miniapp:description': 'Live-streamed Gacha machine controllable via USDC tipping',
+    'miniapp:icon': '🎰',
     'miniapp:version': '1.0.0',
     'miniapp:dimensions': '424x695',
   },
