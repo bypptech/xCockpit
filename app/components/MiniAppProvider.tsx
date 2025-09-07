@@ -72,11 +72,34 @@ export function MiniAppProvider({ children }: MiniAppProviderProps) {
           try {
             setSdk(MiniKit);
 
-            // Call ready() to notify Farcaster that the mini app is ready
-            await MiniKit.actions.ready();
-            setIsFrameReady(true);
-            
-            console.log('🎯 Farcaster SDK initialized and ready');
+            // Wait for DOM to be ready before calling ready()
+            const callReady = () => {
+              try {
+                // Try multiple SDK access patterns
+                const farcasterSdk = (window as any)?.farcaster?.mini || 
+                                   (window as any)?.sdk || 
+                                   MiniKit;
+
+                if (farcasterSdk?.actions?.ready) {
+                  farcasterSdk.actions.ready();
+                  setIsFrameReady(true);
+                  console.log('✅ sdk.actions.ready() called successfully');
+                } else {
+                  console.warn('⚠️ sdk.actions.ready() not available');
+                }
+              } catch (readyError) {
+                console.error('❌ sdk.actions.ready() failed:', readyError);
+              }
+            };
+
+            // Call ready after DOM is ready
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+              callReady();
+            } else {
+              document.addEventListener('DOMContentLoaded', callReady);
+            }
+
+            console.log('🎯 Farcaster SDK initialized');
 
             // Try to get user context
             loadMiniAppUser();

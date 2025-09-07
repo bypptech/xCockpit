@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MiniAppProvider, useMiniApp } from './MiniAppProvider';
 import { Providers } from '../providers';
 import { GachaFeeCustomizer } from './gacha-fee-customizer';
@@ -71,20 +71,40 @@ interface Device {
 
 function DashboardContent() {
   console.log('🚀 DASHBOARD COMPONENT RENDERING');
-  
+
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [gachaFees, setGachaFees] = useState<{ [deviceId: string]: number }>({});
   const [isPlayingGacha, setIsPlayingGacha] = useState<{ [deviceId: string]: boolean }>({});
-  
+
   // Use MiniApp context for enhanced functionality
-  const { 
-    isMiniApp, 
-    isWalletConnected, 
-    user, 
-    isFrameReady,
-    shareCast 
-  } = useMiniApp();
-  
+  const { user, isFrameReady, isMiniApp, isWalletConnected, shareCast, openUrl } = useMiniApp();
+  const readyCalled = useRef(false);
+
+  // Backup ready() call for client-side rendering
+  useEffect(() => {
+    if (isMiniApp && !readyCalled.current) {
+      const callReadyBackup = () => {
+        try {
+          const sdk = (window as any)?.farcaster?.mini || 
+                     (window as any)?.sdk || 
+                     (window as any)?.MiniKit;
+
+          if (sdk?.actions?.ready && !readyCalled.current) {
+            sdk.actions.ready();
+            readyCalled.current = true;
+            console.log('✅ Backup sdk.actions.ready() called from Dashboard');
+          }
+        } catch (error) {
+          console.error('❌ Backup sdk.actions.ready() failed:', error);
+        }
+      };
+
+      // Delay to ensure DOM is fully ready
+      const timer = setTimeout(callReadyBackup, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isMiniApp]);
+
   // ウォレットアドレスが変わるたびにログ出力
   useEffect(() => {
     console.log('🎯 DASHBOARD WALLET ADDRESS CHANGED:', walletAddress);
@@ -93,14 +113,14 @@ function DashboardContent() {
   // Load wallet address on component mount
   useEffect(() => {
     console.log('🔄 DASHBOARD useEffect TRIGGERED - Loading wallet address');
-    
+
     const loadWalletAddress = async () => {
       try {
         // Simulate wallet connection for testing
         const address = null;
         console.log('💰 Dashboard wallet address:', address);
         setWalletAddress(address);
-        
+
         // 開発環境でBasenamesテスト用にテストアドレスを設定
         // ウォレットが接続されていない場合、あなたの実際のアドレスでテスト
         if (!address && process.env.NODE_ENV === 'development') {
@@ -166,7 +186,7 @@ function DashboardContent() {
     try {
       // Load fees for all gacha devices
       const deviceIds = ['ESP32_001', 'ESP32_002'];
-      
+
       for (const deviceId of deviceIds) {
         console.log(`🔄 Loading fee for ${deviceId}...`);
         try {
@@ -294,7 +314,7 @@ function DashboardContent() {
           <p className="text-lg text-gray-600 dark:text-gray-300">
             Web3-Powered IoT Control Dashboard
           </p>
-          
+
           {/* Wallet Address / Basename Display */}
           {walletAddress && (
             <div className="mt-4 flex flex-col items-center gap-2">
@@ -305,14 +325,14 @@ function DashboardContent() {
                   className="text-base font-medium"
                 />
               </div>
-              
+
               {/* Debug Info for testing */}
               <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded">
                 Address: {walletAddress}
               </div>
             </div>
           )}
-          
+
           <div className="mt-4 flex justify-center gap-4">
             <div className={`px-4 py-2 rounded-full text-sm font-medium ${
               isMiniApp 
@@ -321,13 +341,13 @@ function DashboardContent() {
             }`}>
               {isMiniApp ? '🚀 Farcaster Mini App' : '🌐 Web App'}
             </div>
-            
+
             {user && (
               <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium">
                 👤 {user.displayName}
               </div>
             )}
-            
+
             {isFrameReady && (
               <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-4 py-2 rounded-full text-sm font-medium">
                 ⚡ Frame Ready
@@ -354,7 +374,7 @@ function DashboardContent() {
                 showBalance={true}
               />
             </div>
-            
+
             {/* Wallet Balance Card */}
             <WalletBalance 
               walletAddress={walletAddress}
@@ -409,7 +429,7 @@ function DashboardContent() {
                 </div>
               </div>
             )}
-            
+
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Available Devices
@@ -451,7 +471,7 @@ function DashboardContent() {
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         {device.type === 'gacha' && gachaFees[device.id] === undefined ? (
                           <div className="text-center py-4">
